@@ -168,22 +168,82 @@ The bot will automatically start the configured MCP servers.
 
 ## Usage
 
-Once the bot is running, you can interact with it in Discord using text commands:
+The bot provides several ways to interact:
+
+### Text Commands
+
+- `!chat <message>` - Have a conversation with the AI model
+
+  ```text
+  !chat What is the capital of France?
+  !chat Can you help me with Python programming?
+  ```
+
+- `!model <model_name>` - Switch to a different Ollama model
+
+  ```text
+  !model llama3
+  !model mistral
+  ```
+
+- `!remember <content>` - Store information in the AI's memory
+
+  ```text
+  !remember My favorite color is blue
+  !remember Python is a programming language
+  ```
+
+- `!trigger add <word> <response>` - Add a custom trigger word and response
+
+  ```text
+  !trigger add hey Hello there!
+  !trigger add python I love coding in Python!
+  ```
+
+- `!trigger remove <word>` - Remove a trigger word
+
+  ```text
+  !trigger remove hey
+  ```
+
+- `!triggers` - List all active trigger words and their responses
+
+- `!help` - Display help information about all available commands
+
+### Automatic Responses
+
+The bot automatically responds to certain trigger words in normal conversation:
+
+- Default trigger words: "hello", "hey", "ollama", "ai", "bot"
+- You can add or remove trigger words using the `!trigger` command
+- The bot only responds to whole words, not parts of words
+- Only the first trigger word in a message gets a response
+
+### Tips
+
+1. The bot maintains conversation history for context
+2. You can use any Ollama model that's installed on your server
+3. The bot has access to several tools through MCP servers:
+   - Memory: Store and retrieve information
+   - Fetch: Get information from the web
+   - Puppeteer: Control a browser
+   - Sequential Thinking: Break down complex problems
+
+### Example Conversation
 
 ```text
-!chat What's the weather like today?
-!model llama3
-!remember Create a new memory item
-!trigger add keyword Your custom response
-!trigger remove keyword
-!triggers
-!help
+User: !model llama3
+Bot: Model set to llama3
+
+User: !chat Tell me about Python
+Bot: [Detailed response about Python]
+
+User: hello
+Bot: Hello there! How can I help you today?
+
+User: !remember Python is a high-level programming language
+Bot: I'll remember that! Memory created with ID: [memory_id]
 ```
-
-The bot will also automatically respond to certain words in normal conversation:
-
-- When someone says "hello" in chat, the bot will respond
-- You can add or remove trigger words with the `!trigger` command
 
 ## Development
 
