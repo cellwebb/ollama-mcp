@@ -38,20 +38,20 @@ python-preference = "system"
 resolution = "highest"
 
 [tool.black]
-line-length = 100
-target-version = ['py38']
+line-length = 120
+target-version = ['py312']
 
 [tool.isort]
 profile = "black"
-line_length = 100
+line_length = 120
 
 [tool.mypy]
 ignore_missing_imports = true
 check_untyped_defs = true
 
 [tool.ruff]
-line-length = 100
-target-version = "py38"
+line-length = 120
+target-version = "py312"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -61,7 +61,7 @@ testpaths = ["tests"]
 packages = ["ollama_mcp_discord"]
 
 [tool.flake8]
-max-line-length = 100
+max-line-length = 120
 exclude = [
     ".git",
     "__pycache__",

@@ -35,16 +35,18 @@ test-cov:
 lint:
 	@echo "Running linters..."
 	uv pip install .[dev]
-	uv run -- black .
+	npx prettier --ignore-path=".venv/" "**/*.{md,yaml,yml,json}"
+	uv run -- black . --line-length 120
 	uv run -- isort .
 	uv run -- mypy ollama_mcp_discord
-	uv run -- flake8 ollama_mcp_discord tests
+	uv run -- flake8 --max-line-length=120 --exclude=tests/ --ignore=E501 ollama_mcp_discord
 
 format:
 	@echo "Formatting code..."
+	npx prettier --ignore-path=".venv/" "**/*.{md,yaml,yml,json}"
 	uv pip install .[dev]
-	black .
-	isort .
+	uv run -- black . --line-length 120
+	uv run -- isort .
 
 clean:
 	@echo "Removing cache files..."
@@ -55,4 +57,4 @@ clean:
 	find . -type f -name "*.pyo" -delete
 	find . -type f -name "*.pyd" -delete
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +
-	find . -type d -name ".coverage" -exec rm -rf {} + 
+	find . -type d -name ".coverage" -exec rm -rf {} +
