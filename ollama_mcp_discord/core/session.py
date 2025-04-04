@@ -79,7 +79,13 @@ class Session:
 
         Returns:
             The memory ID
+
+        Raises:
+            ValueError: If content is empty
         """
+        if not content or content.strip() == "":
+            raise ValueError("Memory content cannot be empty")
+
         memory_id = str(uuid.uuid4())
 
         # Create memory entity
@@ -128,3 +134,33 @@ class Session:
         recent_messages = self.messages[-10:] if len(self.messages) > 10 else self.messages
 
         return recent_messages
+
+    async def sequential_thinking(self, initial_thought: str) -> Dict[str, Any]:
+        """Perform sequential thinking through the MCP client.
+
+        Args:
+            initial_thought: The initial thought to start the thinking process
+
+        Returns:
+            The final thinking result
+        """
+        if not initial_thought or initial_thought.strip() == "":
+            raise ValueError("Initial thought cannot be empty")
+
+        # Use the MCP client to perform sequential thinking
+        current_thought = initial_thought
+        current_result = None
+
+        # Continue thinking until no more thoughts are needed
+        while True:
+            # Process the current thought
+            current_result = await self.mcp_client.sequential_thinking(current_thought)
+
+            # Check if thinking is complete
+            if not current_result.get("nextThoughtNeeded", False):
+                break
+
+            # Update the current thought for the next iteration
+            current_thought = current_result.get("thought", "")
+
+        return current_result

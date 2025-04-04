@@ -20,16 +20,16 @@ class TestMCPClient:
     def mock_memory_client(self, mocker: MockerFixture):
         """Create a mock MCP Memory client."""
         mock_client = mocker.MagicMock()
-        mock_client.create_entities = mocker.AsyncMock()
-        mock_client.create_entities.return_value = {"success": True}
+        mock_client.create_memory_entity = mocker.AsyncMock()
+        mock_client.create_memory_entity.return_value = {"success": True}
         return mock_client
 
     @pytest.fixture
     def mock_fetch_client(self, mocker: MockerFixture):
         """Create a mock MCP Fetch client."""
         mock_client = mocker.MagicMock()
-        mock_client.fetch = mocker.AsyncMock()
-        mock_client.fetch.return_value = {"content": "Mock fetch content"}
+        mock_client.fetch_url = mocker.AsyncMock()
+        mock_client.fetch_url.return_value = "Mock fetch content"
         return mock_client
 
     @pytest.fixture
@@ -39,7 +39,7 @@ class TestMCPClient:
         mock_client.navigate = mocker.AsyncMock()
         mock_client.navigate.return_value = {"success": True}
         mock_client.screenshot = mocker.AsyncMock()
-        mock_client.screenshot.return_value = {"imageUrl": "mock-screenshot.png"}
+        mock_client.screenshot.return_value = "mock-screenshot.png"
         return mock_client
 
     @pytest.fixture
@@ -60,7 +60,7 @@ class TestMCPClient:
         Then it should be created successfully through the MCP memory client
         """
         # Given
-        mocker.patch.object(client, "_memory_client", mock_memory_client)
+        mocker.patch.object(client, "memory_server", mock_memory_client)
 
         entity_name = "test-entity"
         entity_type = "UserMemory"
@@ -70,11 +70,7 @@ class TestMCPClient:
         result = await client.create_memory_entity(name=entity_name, entity_type=entity_type, observations=observations)
 
         # Then
-        mock_memory_client.create_entities.assert_called_once()
-        call_args = mock_memory_client.create_entities.call_args[0][0]
-        assert call_args["entities"][0]["name"] == entity_name
-        assert call_args["entities"][0]["entityType"] == entity_type
-        assert call_args["entities"][0]["observations"] == observations
+        mock_memory_client.create_memory_entity.assert_called_once_with(entity_name, entity_type, observations)
         assert result == {"success": True}
 
     @pytest.mark.asyncio
@@ -87,16 +83,16 @@ class TestMCPClient:
         Then content should be retrieved through the MCP fetch client
         """
         # Given
-        mocker.patch.object(client, "_fetch_client", mock_fetch_client)
+        mocker.patch.object(client, "fetch_server", mock_fetch_client)
         url = "https://example.com"
+        max_length = 5000
 
         # When
         result = await client.fetch_url(url)
 
         # Then
-        mock_fetch_client.fetch.assert_called_once()
-        assert mock_fetch_client.fetch.call_args[0][0]["url"] == url
-        assert result == {"content": "Mock fetch content"}
+        mock_fetch_client.fetch_url.assert_called_once_with(url, max_length)
+        assert result == "Mock fetch content"
 
     @pytest.mark.asyncio
     async def test_navigate_browser_navigates_through_puppeteer_client(
@@ -108,15 +104,14 @@ class TestMCPClient:
         Then it should navigate through the MCP puppeteer client
         """
         # Given
-        mocker.patch.object(client, "_puppeteer_client", mock_puppeteer_client)
+        mocker.patch.object(client, "puppeteer_server", mock_puppeteer_client)
         url = "https://example.com"
 
         # When
-        result = await client.navigate_browser(url)
+        result = await client.navigate(url)
 
         # Then
-        mock_puppeteer_client.navigate.assert_called_once()
-        assert mock_puppeteer_client.navigate.call_args[0][0]["url"] == url
+        mock_puppeteer_client.navigate.assert_called_once_with(url)
         assert result == {"success": True}
 
     @pytest.mark.asyncio
@@ -129,16 +124,16 @@ class TestMCPClient:
         Then it should capture through the MCP puppeteer client
         """
         # Given
-        mocker.patch.object(client, "_puppeteer_client", mock_puppeteer_client)
-        name = "test-screenshot"
+        mocker.patch.object(client, "puppeteer_server", mock_puppeteer_client)
+        selector = "#test-element"
+        full_page = False
 
         # When
-        result = await client.take_screenshot(name)
+        result = await client.screenshot(selector, full_page)
 
         # Then
-        mock_puppeteer_client.screenshot.assert_called_once()
-        assert mock_puppeteer_client.screenshot.call_args[0][0]["name"] == name
-        assert result == {"imageUrl": "mock-screenshot.png"}
+        mock_puppeteer_client.screenshot.assert_called_once_with(selector, full_page)
+        assert result == "mock-screenshot.png"
 
     @pytest.mark.asyncio
     async def test_sequential_thinking_processes_through_thinking_client(
@@ -150,7 +145,7 @@ class TestMCPClient:
         Then it should process through the MCP sequential thinking client
         """
         # Given
-        mocker.patch.object(client, "_thinking_client", mock_thinking_client)
+        mocker.patch.object(client, "sequential_thinking_server", mock_thinking_client)
         thought = "Initial thought"
 
         # When
@@ -169,9 +164,9 @@ class TestMCPClient:
         Then the error should be handled gracefully
         """
         # Given
-        mock_memory_client.create_entities = mocker.AsyncMock()
-        mock_memory_client.create_entities.side_effect = Exception("Server error")
-        mocker.patch.object(client, "_memory_client", mock_memory_client)
+        mock_memory_client.create_memory_entity = mocker.AsyncMock()
+        mock_memory_client.create_memory_entity.side_effect = Exception("Server error")
+        mocker.patch.object(client, "memory_server", mock_memory_client)
 
         entity_name = "test-entity"
         entity_type = "UserMemory"
@@ -182,7 +177,7 @@ class TestMCPClient:
             await client.create_memory_entity(name=entity_name, entity_type=entity_type, observations=observations)
 
         assert "Server error" in str(excinfo.value)
-        mock_memory_client.create_entities.assert_called_once()
+        mock_memory_client.create_memory_entity.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_fetch_url_with_invalid_url(self, client, mocker: MockerFixture, mock_fetch_client):
@@ -192,19 +187,19 @@ class TestMCPClient:
         Then it should handle the invalid URL gracefully
         """
         # Given
-        mocker.patch.object(client, "_fetch_client", mock_fetch_client)
+        mocker.patch.object(client, "fetch_server", mock_fetch_client)
         invalid_url = "not-a-valid-url"
 
         # Make fetch function return an error for invalid URL
-        mock_fetch_client.fetch = mocker.AsyncMock()
-        mock_fetch_client.fetch.side_effect = ValueError("Invalid URL format")
+        mock_fetch_client.fetch_url = mocker.AsyncMock()
+        mock_fetch_client.fetch_url.side_effect = ValueError("Invalid URL format")
 
         # When/Then
         with pytest.raises(ValueError) as excinfo:
             await client.fetch_url(invalid_url)
 
         assert "Invalid URL format" in str(excinfo.value)
-        mock_fetch_client.fetch.assert_called_once()
+        mock_fetch_client.fetch_url.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_fetch_url_with_empty_url(self, client, mocker: MockerFixture, mock_fetch_client):
@@ -214,13 +209,14 @@ class TestMCPClient:
         Then it should raise an appropriate validation error
         """
         # Given
-        mocker.patch.object(client, "_fetch_client", mock_fetch_client)
+        mocker.patch.object(client, "fetch_server", mock_fetch_client)
         empty_url = ""
 
+        # Add input validation to the fetch_url method
         # When/Then
         with pytest.raises(ValueError) as excinfo:
             await client.fetch_url(empty_url)
 
         assert "URL cannot be empty" in str(excinfo.value) or "Invalid URL" in str(excinfo.value)
         # Fetch client should not be called if validation catches the empty URL
-        mock_fetch_client.fetch.assert_not_called()
+        mock_fetch_client.fetch_url.assert_not_called()

@@ -109,3 +109,23 @@ class SequentialThinkingMCPServer(BaseMCPServer):
             total_thoughts=total_thoughts,
             next_thought_needed=False,
         )
+
+    async def sequentialthinking(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a sequential thinking step with raw payload.
+
+        Args:
+            payload: The raw payload for the sequential thinking request
+
+        Returns:
+            Response from the sequential thinking server
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.endpoint}/mcp_sequential_thinking_sequentialthinking", json=payload
+                ) as response:
+                    response.raise_for_status()
+                    return await response.json()
+        except Exception as e:
+            logger.error(f"Error in sequential thinking: {e}")
+            raise

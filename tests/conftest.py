@@ -54,6 +54,9 @@ def mock_ollama_client(mocker):
     # Simulate generate method
     mock_client.generate.return_value = "Test response"
 
+    # Add the model property for the set_model tests
+    mock_client.model = "llama3"
+
     return mock_client
 
 

@@ -90,7 +90,21 @@ class MCPClient:
         return await self.memory_server.add_observation(name, observation)
 
     async def fetch_url(self, url: str, max_length: int = 5000) -> str:
-        """Fetch content from a URL."""
+        """Fetch content from a URL.
+
+        Args:
+            url: The URL to fetch content from
+            max_length: The maximum length of content to return
+
+        Returns:
+            The fetched content as a string
+
+        Raises:
+            ValueError: If the URL is empty or invalid
+        """
+        if not url:
+            raise ValueError("URL cannot be empty")
+
         return await self.fetch_server.fetch_url(url, max_length)
 
     async def fetch_and_extract(self, url: str, query: str, max_length: int = 5000) -> str:
@@ -130,6 +144,30 @@ class MCPClient:
     async def conclude_thinking(self, final_thought: str, thought_number: int, total_thoughts: int) -> Dict[str, Any]:
         """Conclude a sequential thinking process."""
         return await self.sequential_thinking_server.conclude_thinking(final_thought, thought_number, total_thoughts)
+
+    async def sequential_thinking(self, thought: str) -> Dict[str, Any]:
+        """Process a sequential thinking step through the MCP server.
+
+        Args:
+            thought: The current thought to process
+
+        Returns:
+            A dictionary containing the processed thought and related metadata
+        """
+        try:
+            # Pass the thought to the sequential thinking server
+            result = await self.sequential_thinking_server.sequentialthinking(
+                {
+                    "thought": thought,
+                    "nextThoughtNeeded": True,
+                    "thoughtNumber": 1,
+                    "totalThoughts": 3,
+                }
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error in sequential thinking: {e}")
+            raise
 
     async def __aenter__(self):
         """Async context manager entry."""

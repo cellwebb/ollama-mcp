@@ -16,7 +16,15 @@ class TestSession:
         """Create a mock OllamaClient."""
         client = mocker.patch("ollama_mcp_discord.ollama.client.OllamaClient", autospec=True)
         client_instance = client.return_value
+
+        # Setup sync property access
+        client_instance.model = "llama3"
+
+        # Setup async method mocks properly
+        client_instance.generate = mocker.AsyncMock()
         client_instance.generate.return_value = "Mock response"
+
+        client_instance.list_models = mocker.AsyncMock()
         client_instance.list_models.return_value = [
             {"name": "llama3"},
             {"name": "mistral"},
@@ -28,7 +36,13 @@ class TestSession:
         """Create a mock MCPClient."""
         client = mocker.patch("ollama_mcp_discord.mcp.client.MCPClient", autospec=True)
         client_instance = client.return_value
-        client_instance.create_memory_entity.return_value = "memory-id"
+
+        # Setup async method mocks properly
+        client_instance.create_memory_entity = mocker.AsyncMock()
+        client_instance.create_memory_entity.return_value = {"id": "memory-id"}
+
+        client_instance.sequential_thinking = mocker.AsyncMock()
+
         return client_instance
 
     @pytest.fixture
@@ -66,6 +80,12 @@ class TestSession:
         """
         # Given
         new_model = "mistral"
+        # Mock the list_models to return our test model
+        mock_ollama_client.list_models.return_value = [
+            {"name": "llama3"},
+            {"name": "mistral"},
+            {"name": "codellama"},
+        ]
 
         # When
         await session.set_model(new_model)
@@ -83,6 +103,12 @@ class TestSession:
         """
         # Given
         invalid_model = "nonexistent-model"
+        # Mock the list_models to return only valid models (not including our invalid one)
+        mock_ollama_client.list_models.return_value = [
+            {"name": "llama3"},
+            {"name": "mistral"},
+            {"name": "codellama"},
+        ]
 
         # When/Then
         with pytest.raises(ValueError, match=f"Model '{invalid_model}' not found"):
@@ -97,6 +123,8 @@ class TestSession:
         """
         # Given
         memory_content = "Remember this important information"
+        # Set up the mock to return a specific memory ID
+        mock_mcp_client.create_memory_entity.return_value = {"id": "memory-uuid"}
 
         # When
         with mock.patch("uuid.uuid4", return_value="memory-uuid"):
@@ -202,6 +230,13 @@ class TestSession:
         # Given
         initial_model = session.model_name
         assert initial_model == "llama3"  # From the fixture
+
+        # Mock the list_models to return our test models
+        mock_ollama_client.list_models.return_value = [
+            {"name": "llama3"},
+            {"name": "mistral"},
+            {"name": "codellama"},
+        ]
 
         # When changing model multiple times
         # First change

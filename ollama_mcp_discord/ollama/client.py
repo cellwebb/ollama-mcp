@@ -42,7 +42,13 @@ class OllamaClient:
 
         Returns:
             Generated response
+
+        Raises:
+            ValueError: If prompt is empty
         """
+        if not prompt or prompt.strip() == "":
+            raise ValueError("Prompt cannot be empty")
+
         await self._ensure_session()
 
         # Ensure session is not None (mypy can't infer this from _ensure_session)

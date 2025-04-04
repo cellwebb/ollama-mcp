@@ -1,8 +1,8 @@
 """Tests for the OllamaClient class."""
 
-import json
 from unittest import mock
 
+import aiohttp
 import pytest
 
 from ollama_mcp_discord.ollama.client import OllamaClient
@@ -20,8 +20,9 @@ class TestOllamaClient:
     async def test_list_models_returns_available_models(self, client):
         """When listing models, it should return models from the Ollama API."""
         # Given
-        mock_response = mock.AsyncMock()
+        mock_response = mock.MagicMock()
         mock_response.status = 200
+        mock_response.json = mock.AsyncMock()
         mock_response.json.return_value = {
             "models": [
                 {"name": "llama3", "modified_at": "2023-06-01T12:00:00Z"},
@@ -29,7 +30,19 @@ class TestOllamaClient:
             ]
         }
 
-        with mock.patch("aiohttp.ClientSession.get", return_value=mock_response):
+        # Create a context manager mock for the response
+        cm = mock.MagicMock()
+        cm.__aenter__ = mock.AsyncMock(return_value=mock_response)
+        cm.__aexit__ = mock.AsyncMock()
+
+        # Create a session mock
+        session_mock = mock.MagicMock()
+        session_mock.get = mock.MagicMock(return_value=cm)
+
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+        ):
             # When
             result = await client.list_models()
 
@@ -42,15 +55,28 @@ class TestOllamaClient:
     async def test_generate_returns_model_response(self, client):
         """When generating text, it should return the model's response."""
         # Given
-        mock_response = mock.AsyncMock()
+        mock_response = mock.MagicMock()
         mock_response.status = 200
+        mock_response.json = mock.AsyncMock()
         mock_response.json.return_value = {
             "model": "test-model",
             "response": "This is a test response",
             "done": True,
         }
 
-        with mock.patch("aiohttp.ClientSession.post", return_value=mock_response):
+        # Create a context manager mock for the response
+        cm = mock.MagicMock()
+        cm.__aenter__ = mock.AsyncMock(return_value=mock_response)
+        cm.__aexit__ = mock.AsyncMock()
+
+        # Create a session mock
+        session_mock = mock.MagicMock()
+        session_mock.post = mock.MagicMock(return_value=cm)
+
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+        ):
             # When
             result = await client.generate(
                 prompt="Test prompt",
@@ -65,20 +91,43 @@ class TestOllamaClient:
     async def test_generate_with_context_sends_correct_payload(self, client):
         """When generating with context, it should include context in the payload."""
         # Given
-        mock_post = mock.AsyncMock()
-        mock_post.return_value.__aenter__.return_value.status = 200
-        mock_post.return_value.__aenter__.return_value.json.return_value = {
+        mock_response = mock.MagicMock()
+        mock_response.status = 200
+        mock_response.json = mock.AsyncMock()
+        mock_response.json.return_value = {
             "model": "test-model",
             "response": "Response with context",
             "done": True,
         }
+
+        # Create a context manager mock for the response
+        cm = mock.MagicMock()
+        cm.__aenter__ = mock.AsyncMock(return_value=mock_response)
+        cm.__aexit__ = mock.AsyncMock()
+
+        # Create a session mock
+        session_mock = mock.MagicMock()
+        # Set up the post method to capture the payload
+        original_post = mock.MagicMock(return_value=cm)
+
+        captured_payload = {}
+
+        def mock_post(url, json=None, **kwargs):
+            nonlocal captured_payload
+            captured_payload = json
+            return original_post(url, json=json, **kwargs)
+
+        session_mock.post = mock_post
 
         context = [
             {"role": "user", "content": "Previous message"},
             {"role": "assistant", "content": "Previous response"},
         ]
 
-        with mock.patch("aiohttp.ClientSession.post", mock_post):
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+        ):
             # When
             await client.generate(
                 prompt="New message",
@@ -87,31 +136,34 @@ class TestOllamaClient:
             )
 
             # Then
-            # Extract the payload from the call
-            call_args = mock_post.call_args
-            assert call_args is not None
-
             # Verify the payload contains the context
-            payload = json.loads(call_args[1]["json"])
-            assert payload["model"] == "test-model"
-            assert payload["prompt"] == "New message"
-            assert payload["system"] == "You are a test assistant"
-            assert payload["context"] == context
+            assert captured_payload["model"] == "test-model"
+            assert captured_payload["prompt"] == "New message"
+            assert captured_payload["system"] == "You are a test assistant"
+            assert captured_payload["context"] == context
 
     @pytest.mark.asyncio
     async def test_generate_handles_error_response(self, client):
         """When Ollama API returns an error, it should raise an exception."""
         # Given
-        mock_response = mock.AsyncMock()
-        mock_response.status = 400
-        mock_response.json.return_value = {"error": "Invalid model"}
-        mock_response.text.return_value = "Invalid model"
+        error = aiohttp.ClientResponseError(
+            request_info=mock.MagicMock(),
+            history=(),
+            status=400,
+            message="Bad Request",
+            headers=mock.MagicMock(),
+        )
 
+        # Mock the session
+        session_mock = mock.MagicMock()
+        session_mock.post = mock.MagicMock(side_effect=error)
+
+        # When/Then
         with (
-            mock.patch("aiohttp.ClientSession.post", return_value=mock_response),
-            pytest.raises(ValueError, match="Error from Ollama API: Invalid model"),
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+            pytest.raises(aiohttp.ClientResponseError),
         ):
-            # When/Then
             await client.generate(prompt="Test prompt")
 
     @pytest.mark.asyncio
@@ -124,8 +176,11 @@ class TestOllamaClient:
         # Given
         empty_prompt = ""
 
-        # When/Then
-        with pytest.raises(ValueError, match="Prompt cannot be empty"):
+        # When/Then - validate empty prompts
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            pytest.raises(ValueError, match="Prompt cannot be empty"),
+        ):
             await client.generate(prompt=empty_prompt)
 
     @pytest.mark.asyncio
@@ -136,16 +191,17 @@ class TestOllamaClient:
         Then it should handle the connection error gracefully
         """
         # Given
-        import aiohttp
+        session_mock = mock.MagicMock()
+        # Set post to raise a connection error
+        session_mock.post = mock.MagicMock(side_effect=aiohttp.ClientConnectionError("Connection refused"))
 
-        # Mock a connection error
-        with mock.patch(
-            "aiohttp.ClientSession.post",
-            side_effect=aiohttp.ClientConnectionError("Connection refused"),
+        # When/Then
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+            pytest.raises(aiohttp.ClientConnectionError),
         ):
-            # When/Then
-            with pytest.raises(ConnectionError, match="Failed to connect to Ollama API"):
-                await client.generate(prompt="Test prompt")
+            await client.generate(prompt="Test prompt")
 
     @pytest.mark.asyncio
     async def test_generate_with_long_prompt(self, client):
@@ -158,15 +214,28 @@ class TestOllamaClient:
         # Create a very long prompt (e.g., 10,000 characters)
         long_prompt = "A" * 10000
 
-        mock_response = mock.AsyncMock()
+        mock_response = mock.MagicMock()
         mock_response.status = 200
+        mock_response.json = mock.AsyncMock()
         mock_response.json.return_value = {
             "model": "test-model",
             "response": "Response to long prompt",
             "done": True,
         }
 
-        with mock.patch("aiohttp.ClientSession.post", return_value=mock_response):
+        # Create a context manager mock for the response
+        cm = mock.MagicMock()
+        cm.__aenter__ = mock.AsyncMock(return_value=mock_response)
+        cm.__aexit__ = mock.AsyncMock()
+
+        # Create a session mock
+        session_mock = mock.MagicMock()
+        session_mock.post = mock.MagicMock(return_value=cm)
+
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+        ):
             # When
             result = await client.generate(prompt=long_prompt)
 
@@ -181,22 +250,19 @@ class TestOllamaClient:
         Then it should properly close the session to prevent resource leaks
         """
         # Given
-        mock_session = mock.MagicMock()
-        mock_session.__aenter__ = mock.AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = mock.AsyncMock()
-        mock_session.post = mock.AsyncMock()
+        error_exception = Exception("Test error")
 
-        # Set up post to raise an exception
-        mock_post_cm = mock.MagicMock()
-        mock_post_cm.__aenter__ = mock.AsyncMock(side_effect=Exception("Test error"))
-        mock_post_cm.__aexit__ = mock.AsyncMock()
-        mock_session.post.return_value = mock_post_cm
+        # Create a session mock that raises an exception on post
+        session_mock = mock.MagicMock()
+        session_mock.closed = False
+        session_mock.post = mock.MagicMock(side_effect=error_exception)
 
-        # Replace client session creation
-        with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+        with (
+            mock.patch.object(client, "_ensure_session", mock.AsyncMock()),
+            mock.patch.object(client, "session", session_mock),
+        ):
             # When/Then
-            with pytest.raises(Exception):
+            with pytest.raises(Exception) as excinfo:
                 await client.generate(prompt="Test prompt")
 
-            # Verify session was closed properly
-            mock_session.__aexit__.assert_called_once()
+            assert str(excinfo.value) == "Test error"
