@@ -15,9 +15,8 @@ help:
 
 setup:
 	@echo "Setting up virtual environment and installing dependencies..."
-	python -m venv .venv
-	.venv/bin/uv pip install -r requirements.txt
-	.venv/bin/uv pip install -r dev-requirements.txt
+	uv venv
+	uv pip install .
 
 run:
 	@echo "Starting Ollama-MCP Discord bot..."
@@ -25,30 +24,35 @@ run:
 
 test:
 	@echo "Running tests..."
-	python -m pytest tests/
+	uv pip install .[dev]
+	uv run -- pytest tests/
 
 test-cov:
 	@echo "Running tests with coverage..."
-	python -m pytest --cov=ollama_mcp_discord tests/ --cov-report=term --cov-report=html
+	uv pip install .[dev]
+	uv run -- pytest --cov=ollama_mcp_discord tests/
 
 lint:
 	@echo "Running linters..."
-	python -m black --check ollama_mcp_discord tests
-	python -m isort --check ollama_mcp_discord tests
-	python -m flake8 ollama_mcp_discord tests
-	python -m mypy ollama_mcp_discord
+	uv pip install .[dev]
+	uv run -- black .
+	uv run -- isort .
+	uv run -- mypy ollama_mcp_discord
+	uv run -- flake8 ollama_mcp_discord tests
 
 format:
 	@echo "Formatting code..."
-	python -m black ollama_mcp_discord tests
-	python -m isort ollama_mcp_discord tests
+	uv pip install .[dev]
+	black .
+	isort .
 
 clean:
 	@echo "Removing cache files..."
-	rm -rf .pytest_cache
-	rm -rf htmlcov
-	rm -rf .coverage
-	rm -rf __pycache__
-	rm -rf ollama_mcp_discord/__pycache__
-	rm -rf tests/__pycache__
-	find . -name "*.pyc" -delete 
+	rm -rf .venv
+	rm -rf *.egg-info
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	find . -type f -name "*.pyd" -delete
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	find . -type d -name ".coverage" -exec rm -rf {} + 
