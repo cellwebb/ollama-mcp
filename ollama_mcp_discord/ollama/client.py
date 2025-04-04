@@ -54,22 +54,24 @@ class OllamaClient:
         # Ensure session is not None (mypy can't infer this from _ensure_session)
         assert self.session is not None, "Client session must be initialized"
 
-        payload: Dict[str, Any] = {
+        # Super simplified payload - only the essentials
+        payload = {
             "model": self.model,
             "prompt": prompt,
+            "stream": False,
         }
 
+        # Only add system if it's provided
         if system:
             payload["system"] = system
 
-        if context:
-            payload["context"] = context
-
         try:
             url = f"{self.host}/api/generate"
+            logger.debug(f"Sending request to {url} with model {self.model}")
             async with self.session.post(url, json=payload) as response:
                 response.raise_for_status()
                 result = await response.json()
+                logger.debug(f"Response status: {response.status}")
                 return result.get("response", "")
         except aiohttp.ClientError as e:
             logger.error(f"Error generating response: {e}")
@@ -88,10 +90,13 @@ class OllamaClient:
 
         try:
             url = f"{self.host}/api/tags"
+            logger.debug(f"Requesting models from {url}")
             async with self.session.get(url) as response:
                 response.raise_for_status()
                 result = await response.json()
-                return result.get("models", [])
+                models = result.get("models", [])
+                logger.debug(f"Retrieved {len(models)} models")
+                return models
         except aiohttp.ClientError as e:
             logger.error(f"Error listing models: {e}")
             raise

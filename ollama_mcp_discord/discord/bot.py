@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Dict, Optional, Set
 
+import aiohttp
 import nextcord
 from nextcord.ext import commands
 
@@ -111,6 +112,14 @@ def register_commands(bot: commands.Bot):
 
                 # Send the response
                 await ctx.reply(response)
+            except aiohttp.ClientResponseError as e:
+                error_msg = f"API Error: {e.status} {e.message}"
+                if e.status == 400:
+                    error_msg += "\nThis could be due to an invalid model name or a model compatibility issue."
+                    # Try using a different model
+                    error_msg += "\nTry using a different model with: !model llama3.2:latest"
+                logger.error(error_msg)
+                await ctx.reply(error_msg)
             except Exception as e:
                 logger.exception(f"Error processing chat message: {e}")
                 await ctx.reply(f"An error occurred while processing your message: {str(e)}")

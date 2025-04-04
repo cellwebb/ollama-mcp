@@ -60,16 +60,16 @@ class Session:
         Args:
             model_name: The name of the model to use
         """
-        # Check if model exists
-        models = await self.ollama_client.list_models()
-        if model_name not in [model["name"] for model in models]:
-            raise ValueError(f"Model '{model_name}' not found")
+        try:
+            # Simply set the model without validation
+            # This allows for users to specify models in different formats
+            self.model_name = model_name
+            self.ollama_client.model = model_name
+            logger.info(f"Changed model to {model_name} for user {self.user_id}")
 
-        # Update model
-        self.model_name = model_name
-        self.ollama_client.model = model_name
-
-        logger.info(f"Changed model to {model_name} for user {self.user_id}")
+        except Exception as e:
+            logger.error(f"Error setting model: {e}")
+            raise
 
     async def create_memory(self, content: str) -> str:
         """Create a memory item.
@@ -102,27 +102,28 @@ class Session:
         Returns:
             The generated response
         """
-        # Build prompt with MCP tool context
-        system_prompt = (
-            "You are an AI assistant with access to the following tools:\n"
-            "- Memory: Store and retrieve information\n"
-            "- Fetch: Get information from the web\n"
-            "- Puppeteer: Control a browser\n"
-            "- Sequential Thinking: Break down complex problems\n\n"
-            "The user can interact with you using these commands:\n"
-            "!chat - Chat with you directly\n"
-            "!model <name> - Change the AI model\n"
-            "!remember <content> - Store something in memory\n"
-            "!help - Show all available commands"
-        )
+        try:
+            # Build prompt with MCP tool context
+            system_prompt = "You are a helpful assistant."
 
-        # Get conversation history formatted for Ollama
-        history = self._format_conversation_history()
+            # Get conversation history formatted for Ollama
+            history = self._format_conversation_history()
 
-        # Generate response with Ollama
-        response = await self.ollama_client.generate(prompt=user_message, system=system_prompt, context=history)
+            # Log for debugging
+            logger.debug(f"Generating response with model: {self.model_name}")
+            logger.debug(f"System prompt: {system_prompt}")
+            logger.debug(f"User message: {user_message}")
+            logger.debug(f"History length: {len(history)}")
 
-        return response
+            # Generate response with Ollama
+            response = await self.ollama_client.generate(prompt=user_message, system=system_prompt, context=history)
+
+            logger.debug(f"Generated response length: {len(response)}")
+            return response
+
+        except Exception as e:
+            logger.error(f"Error in _generate_response: {e}", exc_info=True)
+            raise
 
     def _format_conversation_history(self) -> List[Any]:
         """Format the conversation history for Ollama.
