@@ -113,3 +113,90 @@ class TestOllamaClient:
         ):
             # When/Then
             await client.generate(prompt="Test prompt")
+
+    @pytest.mark.asyncio
+    async def test_generate_with_empty_prompt(self, client):
+        """
+        Given an empty prompt
+        When generating text
+        Then it should handle the empty prompt gracefully
+        """
+        # Given
+        empty_prompt = ""
+
+        # When/Then
+        with pytest.raises(ValueError, match="Prompt cannot be empty"):
+            await client.generate(prompt=empty_prompt)
+
+    @pytest.mark.asyncio
+    async def test_generate_with_server_down(self, client):
+        """
+        Given the Ollama server is unreachable
+        When generating text
+        Then it should handle the connection error gracefully
+        """
+        # Given
+        import aiohttp
+
+        # Mock a connection error
+        with mock.patch(
+            "aiohttp.ClientSession.post",
+            side_effect=aiohttp.ClientConnectionError("Connection refused"),
+        ):
+            # When/Then
+            with pytest.raises(ConnectionError, match="Failed to connect to Ollama API"):
+                await client.generate(prompt="Test prompt")
+
+    @pytest.mark.asyncio
+    async def test_generate_with_long_prompt(self, client):
+        """
+        Given an excessively long prompt
+        When generating text
+        Then it should process the long input appropriately
+        """
+        # Given
+        # Create a very long prompt (e.g., 10,000 characters)
+        long_prompt = "A" * 10000
+
+        mock_response = mock.AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = {
+            "model": "test-model",
+            "response": "Response to long prompt",
+            "done": True,
+        }
+
+        with mock.patch("aiohttp.ClientSession.post", return_value=mock_response):
+            # When
+            result = await client.generate(prompt=long_prompt)
+
+            # Then
+            assert result == "Response to long prompt"
+
+    @pytest.mark.asyncio
+    async def test_generate_closes_session_on_error(self, client):
+        """
+        Given an API error occurs
+        When generating text
+        Then it should properly close the session to prevent resource leaks
+        """
+        # Given
+        mock_session = mock.MagicMock()
+        mock_session.__aenter__ = mock.AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = mock.AsyncMock()
+        mock_session.post = mock.AsyncMock()
+
+        # Set up post to raise an exception
+        mock_post_cm = mock.MagicMock()
+        mock_post_cm.__aenter__ = mock.AsyncMock(side_effect=Exception("Test error"))
+        mock_post_cm.__aexit__ = mock.AsyncMock()
+        mock_session.post.return_value = mock_post_cm
+
+        # Replace client session creation
+        with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+            # When/Then
+            with pytest.raises(Exception):
+                await client.generate(prompt="Test prompt")
+
+            # Verify session was closed properly
+            mock_session.__aexit__.assert_called_once()

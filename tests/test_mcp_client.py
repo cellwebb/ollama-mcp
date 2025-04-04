@@ -160,3 +160,67 @@ class TestMCPClient:
         mock_thinking_client.sequentialthinking.assert_called_once()
         assert mock_thinking_client.sequentialthinking.call_args[0][0]["thought"] == thought
         assert result == {"thought": "Mock thought"}
+
+    @pytest.mark.asyncio
+    async def test_create_memory_entity_server_error(self, client, mocker: MockerFixture, mock_memory_client):
+        """
+        Given entity information
+        When creating a memory entity and the server returns an error
+        Then the error should be handled gracefully
+        """
+        # Given
+        mock_memory_client.create_entities = mocker.AsyncMock()
+        mock_memory_client.create_entities.side_effect = Exception("Server error")
+        mocker.patch.object(client, "_memory_client", mock_memory_client)
+
+        entity_name = "test-entity"
+        entity_type = "UserMemory"
+        observations = ["Test observation"]
+
+        # When/Then
+        with pytest.raises(Exception) as excinfo:
+            await client.create_memory_entity(name=entity_name, entity_type=entity_type, observations=observations)
+
+        assert "Server error" in str(excinfo.value)
+        mock_memory_client.create_entities.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_fetch_url_with_invalid_url(self, client, mocker: MockerFixture, mock_fetch_client):
+        """
+        Given an invalid URL to fetch
+        When fetching the URL
+        Then it should handle the invalid URL gracefully
+        """
+        # Given
+        mocker.patch.object(client, "_fetch_client", mock_fetch_client)
+        invalid_url = "not-a-valid-url"
+
+        # Make fetch function return an error for invalid URL
+        mock_fetch_client.fetch = mocker.AsyncMock()
+        mock_fetch_client.fetch.side_effect = ValueError("Invalid URL format")
+
+        # When/Then
+        with pytest.raises(ValueError) as excinfo:
+            await client.fetch_url(invalid_url)
+
+        assert "Invalid URL format" in str(excinfo.value)
+        mock_fetch_client.fetch.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_fetch_url_with_empty_url(self, client, mocker: MockerFixture, mock_fetch_client):
+        """
+        Given an empty URL to fetch
+        When fetching the URL
+        Then it should raise an appropriate validation error
+        """
+        # Given
+        mocker.patch.object(client, "_fetch_client", mock_fetch_client)
+        empty_url = ""
+
+        # When/Then
+        with pytest.raises(ValueError) as excinfo:
+            await client.fetch_url(empty_url)
+
+        assert "URL cannot be empty" in str(excinfo.value) or "Invalid URL" in str(excinfo.value)
+        # Fetch client should not be called if validation catches the empty URL
+        mock_fetch_client.fetch.assert_not_called()
