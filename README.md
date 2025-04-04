@@ -1,6 +1,95 @@
 # Ollama-MCP Discord Bot
 
-A Python project that connects Ollama to Model Context Protocol (MCP) servers and allows users to interact with AI models through Discord.
+A Discord bot powered by Ollama and MCP servers, providing AI-powered interactions.
+
+## Prerequisites
+
+- Python 3.8+
+- `uv` package manager
+
+## Installation
+
+1. **Install uv**:
+
+   ```bash
+   # macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Windows (PowerShell)
+   Invoke-WebRequest -Uri https://astral.sh/uv/install.ps1 -OutFile install.ps1; powershell -ExecutionPolicy Bypass -File ./install.ps1
+   ```
+
+1. **Clone the Repository**:
+
+   ```bash
+   git clone https://github.com/yourusername/ollama-mcp-discord.git
+   cd ollama-mcp-discord
+   ```
+
+1. **Create and Activate Virtual Environment**:
+
+   ```bash
+   uv venv
+   source .venv/bin/activate  # macOS/Linux
+   # OR
+   .venv\Scripts\activate     # Windows
+   ```
+
+1. **Install Project Dependencies**:
+
+   ```bash
+   uv pip install .
+   ```
+
+1. **Install Development Dependencies** (optional):
+
+   ```bash
+   uv pip install .[dev]
+   ```
+
+## Configuration
+
+1. **Copy Environment Template**:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+1. **Edit `.env` and Add Your Discord Token**:
+
+   ```bash
+   DISCORD_TOKEN=your_discord_bot_token_here
+   ```
+
+## Running the Bot
+
+```bash
+python -m ollama_mcp_discord
+```
+
+## Development
+
+### Running Tests
+
+```bash
+uv pip install .[dev]
+make test
+```
+
+### Code Formatting
+
+```bash
+black .
+isort .
+```
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Features
 
