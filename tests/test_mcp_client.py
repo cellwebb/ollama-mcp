@@ -67,9 +67,7 @@ class TestMCPClient:
         observations = ["Test observation"]
 
         # When
-        result = await client.create_memory_entity(
-            name=entity_name, entity_type=entity_type, observations=observations
-        )
+        result = await client.create_memory_entity(name=entity_name, entity_type=entity_type, observations=observations)
 
         # Then
         mock_memory_client.create_entities.assert_called_once()

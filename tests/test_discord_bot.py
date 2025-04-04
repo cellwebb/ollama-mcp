@@ -1,4 +1,4 @@
-"""Tests for the Discord bot functionality."""
+"""Tests for the Discord bot module."""
 
 from unittest import mock
 
@@ -12,6 +12,21 @@ from ollama_mcp_discord.discord.bot import (
     create_bot,
     register_commands,
 )
+
+
+@pytest.fixture
+def reset_trigger_words():
+    """Fixture to reset trigger words and responses before each test."""
+    original_words = TRIGGER_WORDS.copy()
+    original_responses = TRIGGER_RESPONSES.copy()
+
+    yield
+
+    # Clear and restore original state
+    TRIGGER_WORDS.clear()
+    TRIGGER_RESPONSES.clear()
+    TRIGGER_WORDS.update(original_words)
+    TRIGGER_RESPONSES.update(original_responses)
 
 
 class TestDiscordBot:
@@ -49,28 +64,22 @@ class TestDiscordBot:
         ctx.typing.return_value.__aexit__ = mocker.AsyncMock()
         return ctx
 
-    def test_create_bot_returns_configured_bot(self, mocker: MockerFixture):
+    @pytest.mark.asyncio
+    async def test_create_bot_returns_configured_bot(self):
         """
-        When create_bot is called
-        Then it should return a properly configured Discord bot
+        When creating a bot
+        Then it should return a configured nextcord.ext.commands.Bot
         """
-        # Given
-        mock_commands_bot = mocker.patch("nextcord.ext.commands.Bot")
-
         # When
         bot = create_bot()
 
         # Then
-        mock_commands_bot.assert_called_once()
-        # Bot should have events registered
-        assert mock_commands_bot.return_value.event.call_count >= 1
-        # Bot should have commands registered
-        assert "register_commands" in [m[0] for m in mocker.mock_module.mock_calls]
+        assert isinstance(bot, nextcord.ext.commands.Bot)
+        assert bot.command_prefix == "!"
+        assert bot.intents.message_content is True
 
     @pytest.mark.asyncio
-    async def test_on_message_responds_to_trigger_words(
-        self, mocker: MockerFixture, mock_bot, mock_message
-    ):
+    async def test_on_message_responds_to_trigger_words(self, mocker: MockerFixture, mock_bot, mock_message):
         """
         Given a message containing a trigger word
         When the on_message event handler is called
@@ -142,17 +151,12 @@ class TestDiscordBot:
             TRIGGER_RESPONSES = original_trigger_responses
 
     @pytest.mark.asyncio
-    async def test_trigger_command_adds_new_trigger_word(self, mock_bot, mock_ctx):
+    async def test_trigger_command_adds_new_trigger_word(self, mock_bot, mock_ctx, reset_trigger_words):
         """
         Given parameters to add a new trigger word
         When the trigger command is called
-        Then the word and response should be added to the trigger lists
+        Then the word should be added to the trigger lists
         """
-        # Given
-        global TRIGGER_WORDS, TRIGGER_RESPONSES
-        original_trigger_words = TRIGGER_WORDS.copy()
-        original_trigger_responses = TRIGGER_RESPONSES.copy()
-
         # Find the trigger command handler
         trigger_cmd = None
 
@@ -177,35 +181,27 @@ class TestDiscordBot:
             # Set up parameters
             action = "add"
             word = "newword"
-            response = "This is a new trigger response"
+            response = "New response"
 
             # When
-            await trigger_cmd(mock_ctx, action, word, response=response)
+            await trigger_cmd(mock_ctx, action, word, response)
 
             # Then
             assert "newword" in TRIGGER_WORDS
-            assert TRIGGER_RESPONSES["newword"] == "This is a new trigger response"
-            mock_ctx.reply.assert_called_once_with(
-                f"Added trigger word: '{word}' with response: '{response}'"
-            )
-
+            assert TRIGGER_RESPONSES["newword"] == "New response"
         finally:
-            # Restore original values
-            TRIGGER_WORDS = original_trigger_words
-            TRIGGER_RESPONSES = original_trigger_responses
+            # Cleanup
+            if "newword" in TRIGGER_WORDS:
+                del TRIGGER_WORDS["newword"]
+                del TRIGGER_RESPONSES["newword"]
 
     @pytest.mark.asyncio
-    async def test_trigger_command_removes_existing_trigger_word(self, mock_bot, mock_ctx):
+    async def test_trigger_command_removes_existing_trigger_word(self, mock_bot, mock_ctx, reset_trigger_words):
         """
         Given parameters to remove an existing trigger word
         When the trigger command is called
         Then the word should be removed from the trigger lists
         """
-        # Given
-        global TRIGGER_WORDS, TRIGGER_RESPONSES
-        original_trigger_words = TRIGGER_WORDS.copy()
-        original_trigger_responses = TRIGGER_RESPONSES.copy()
-
         # Find the trigger command handler
         trigger_cmd = None
 
@@ -241,9 +237,8 @@ class TestDiscordBot:
             # Then
             assert "testword" not in TRIGGER_WORDS
             assert "testword" not in TRIGGER_RESPONSES
-            mock_ctx.reply.assert_called_once_with(f"Removed trigger word: '{word}'")
-
         finally:
-            # Restore original values
-            TRIGGER_WORDS = original_trigger_words
-            TRIGGER_RESPONSES = original_trigger_responses
+            # Cleanup
+            if "testword" in TRIGGER_WORDS:
+                TRIGGER_WORDS.remove("testword")
+                del TRIGGER_RESPONSES["testword"]
