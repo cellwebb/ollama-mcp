@@ -7,6 +7,7 @@ A Python project that connects Ollama to Model Context Protocol (MCP) servers an
 - Connect to local Ollama models
 - Access MCP capabilities (memory, fetch, puppeteer, sequential thinking)
 - User-friendly Discord bot interface with text commands
+- Respond to specific trigger words in normal messages
 - Multi-user conversation support
 - Configurable model selection
 
@@ -21,7 +22,7 @@ A Python project that connects Ollama to Model Context Protocol (MCP) servers an
 
 Create a `.env` file with the following variables:
 
-```
+```bash
 DISCORD_TOKEN=your_discord_bot_token
 OLLAMA_HOST=http://localhost:11434
 DEFAULT_MODEL=llama3
@@ -31,11 +32,20 @@ DEFAULT_MODEL=llama3
 
 Once the bot is running, you can interact with it in Discord using text commands:
 
-```
+```text
 !chat What's the weather like today?
 !model llama3
 !remember Create a new memory item
+!trigger add keyword Your custom response
+!trigger remove keyword
+!triggers
+!help
 ```
+
+The bot will also automatically respond to certain words in normal conversation:
+
+- When someone says "hello" in chat, the bot will respond
+- You can add or remove trigger words with the `!trigger` command
 
 ## Development
 

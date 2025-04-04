@@ -27,6 +27,7 @@ A one-day implementation plan to build a Python project connecting MCP servers t
 - [ ] Implement text command handling
 - [ ] Create message processing pipeline
 - [ ] Add user authentication/authorization
+- [ ] Implement trigger word responses for normal messages
 
 ## Integration Layer (2 hours)
 
@@ -62,3 +63,4 @@ A one-day implementation plan to build a Python project connecting MCP servers t
 - [ ] Implement rate limiting for fair usage
 - [ ] Create admin commands for bot management
 - [ ] Add support for multiple Ollama models
+- [ ] Add custom trigger word persistence
