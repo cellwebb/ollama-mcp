@@ -38,7 +38,7 @@ A one-day implementation plan to build a Python project connecting MCP servers t
 
 ## Testing and Refinement (1 hour)
 
-- [ ] Write basic unit tests for core functionality
+- [x] Write basic unit tests for core functionality
 - [ ] Test end-to-end workflow
 - [ ] Refine response formatting
 - [ ] Optimize token usage
@@ -52,8 +52,8 @@ A one-day implementation plan to build a Python project connecting MCP servers t
 
 ## Deployment (1 hour)
 
-- [ ] Create startup script
-- [ ] Set up environment variable handling
+- [x] Create startup script
+- [x] Set up environment variable handling
 - [ ] Document hosting requirements
 - [ ] Prepare for first release
 

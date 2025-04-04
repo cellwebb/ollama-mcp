@@ -28,6 +28,55 @@ OLLAMA_HOST=http://localhost:11434
 DEFAULT_MODEL=llama3
 ```
 
+## MCP Server Configuration
+
+The Ollama-MCP Discord bot can interact with various MCP servers. To configure these servers, create a `mcp.json` file in the project root with the following structure:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {
+        "MEMORY_FILE_PATH": "/Users/cell/.windsurf-memory.json"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "mcp-puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {
+        "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": false}",
+        "ALLOW_DANGEROUS": "true"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}
+```
+
+### Starting the Bot
+
+To start the bot, run the following command:
+
+```bash
+python -m ollama_mcp_discord
+```
+
+The bot will automatically start the configured MCP servers.
+
+### Environment Variables
+
+- `DISCORD_TOKEN`: Required for the Discord bot to authenticate.
+- `MCP_CONFIG_PATH`: Optional path to the MCP configuration file (default: `mcp.json`).
+
 ## Usage
 
 Once the bot is running, you can interact with it in Discord using text commands:

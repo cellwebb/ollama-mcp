@@ -16,12 +16,15 @@ logger = logging.getLogger(__name__)
 class Session:
     """User session for managing conversations and MCP integrations."""
 
-    def __init__(self, user_id: int, model_name: str):
+    def __init__(
+        self, user_id: int, model_name: str, mcp_client: Optional[MCPClient] = None
+    ):
         """Initialize a new session for a user.
 
         Args:
             user_id: The Discord user ID
             model_name: The default Ollama model to use
+            mcp_client: An initialized MCP client (optional)
         """
         self.user_id = user_id
         self.model_name = model_name
@@ -31,7 +34,8 @@ class Session:
         self.ollama_client = OllamaClient(
             host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name
         )
-        self.mcp_client = MCPClient()
+        # Use provided MCP client or create a new one
+        self.mcp_client = mcp_client or MCPClient()
 
         # Conversation history
         self.messages: List[Dict[str, Any]] = []

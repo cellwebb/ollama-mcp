@@ -8,11 +8,15 @@ import nextcord
 from nextcord.ext import commands
 
 from ollama_mcp_discord.core.session import Session
+from ollama_mcp_discord.mcp.client import MCPClient
 
 logger = logging.getLogger(__name__)
 
 # User sessions storage
 user_sessions: Dict[int, Session] = {}
+
+# Shared MCP client
+mcp_client: Optional[MCPClient] = None
 
 # Trigger words that the bot will respond to
 TRIGGER_WORDS: Set[str] = {"hello", "hey", "ollama", "ai", "bot"}
@@ -25,8 +29,15 @@ TRIGGER_RESPONSES: Dict[str, str] = {
 }
 
 
-def create_bot() -> commands.Bot:
-    """Create and configure the Discord bot."""
+def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
+    """Create and configure the Discord bot.
+
+    Args:
+        shared_mcp_client: An initialized MCP client to share across sessions
+    """
+    global mcp_client
+    mcp_client = shared_mcp_client
+
     intents = nextcord.Intents.default()
     intents.message_content = True
 
@@ -38,6 +49,10 @@ def create_bot() -> commands.Bot:
         """Handle bot ready event."""
         logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
         logger.info(f"Connected to {len(bot.guilds)} guilds")
+        if mcp_client:
+            logger.info("Using shared MCP client")
+        else:
+            logger.info("No shared MCP client provided, sessions will create their own")
 
     # Message event listener for triggering on specific words
     @bot.event
@@ -255,10 +270,24 @@ def register_commands(bot: commands.Bot):
 
 
 def get_user_session(user_id: int) -> Session:
-    """Get or create a session for the user."""
-    if user_id not in user_sessions:
-        # Create a new session
-        model_name = os.getenv("DEFAULT_MODEL", "llama3")
-        user_sessions[user_id] = Session(user_id, model_name)
+    """Get or create user session.
 
-    return user_sessions[user_id]
+    Args:
+        user_id: Discord user ID
+
+    Returns:
+        A session for the user
+    """
+    # Check if we already have a session for this user
+    if user_id in user_sessions:
+        return user_sessions[user_id]
+
+    # Default model - could be configured differently
+    default_model = os.getenv("DEFAULT_MODEL", "llama3")
+
+    # Create new session with shared MCP client if available
+    session = Session(user_id, default_model, mcp_client=mcp_client)
+    user_sessions[user_id] = session
+
+    logger.info(f"Created new session for user {user_id} with model {default_model}")
+    return session
