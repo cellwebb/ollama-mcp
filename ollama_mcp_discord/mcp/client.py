@@ -1,14 +1,21 @@
-"""Client for interacting with MCP servers."""
+"""MCP client implementation for Ollama-MCP Discord bot."""
 
 import asyncio
 import json
 import logging
 import os
-import signal
-import subprocess
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import aiohttp
+
+from ollama_mcp_discord.core.config import config
+from ollama_mcp_discord.mcp.servers import (
+    BaseMCPServer,
+    FetchMCPServer,
+    MemoryMCPServer,
+    PuppeteerMCPServer,
+    SequentialThinkingMCPServer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,223 +23,132 @@ logger = logging.getLogger(__name__)
 class MCPClient:
     """Client for interacting with MCP servers."""
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: Optional[str] = None):
         """Initialize the MCP client.
 
         Args:
             config_path: Path to MCP server configuration JSON file
         """
-        # Default MCP server endpoints
-        self.memory_endpoint = "http://localhost:3100"
-        self.fetch_endpoint = "http://localhost:3101"
-        self.puppeteer_endpoint = "http://localhost:3102"
-        self.sequential_thinking_endpoint = "http://localhost:3103"
+        # Default server endpoints from configuration
+        self.memory_endpoint = config.memory_server_endpoint
+        self.fetch_endpoint = config.fetch_server_endpoint
+        self.puppeteer_endpoint = config.puppeteer_server_endpoint
+        self.sequential_thinking_endpoint = config.sequential_thinking_server_endpoint
 
-        # Load server configuration if provided
+        # Initialize MCP servers
+        self.memory_server = MemoryMCPServer("memory", self.memory_endpoint)
+        self.fetch_server = FetchMCPServer("fetch", self.fetch_endpoint)
+        self.puppeteer_server = PuppeteerMCPServer("puppeteer", self.puppeteer_endpoint)
+        self.sequential_thinking_server = SequentialThinkingMCPServer(
+            "sequential-thinking", self.sequential_thinking_endpoint
+        )
+
+        # Dictionary of all servers
+        self.servers: Dict[str, BaseMCPServer] = {
+            "memory": self.memory_server,
+            "fetch": self.fetch_server,
+            "puppeteer": self.puppeteer_server,
+            "sequential-thinking": self.sequential_thinking_server,
+        }
+
+        # Load server configuration
         self.mcp_servers = {}
         if config_path and os.path.exists(config_path):
             try:
                 with open(config_path, "r") as f:
-                    config = json.load(f)
-                    self.mcp_servers = config.get("mcpServers", {})
-                    logger.info(f"Loaded MCP server configuration from {config_path}")
+                    config_data = json.load(f)
+                    self.mcp_servers = config_data.get("mcpServers", {})
+
+                    # Update server configurations from config file
+                    for server_name, server_config in self.mcp_servers.items():
+                        if server_name in self.servers:
+                            self.servers[server_name].command = server_config.get("command")
+                            self.servers[server_name].args = server_config.get("args", [])
+                            self.servers[server_name].env_vars = server_config.get("env", {})
             except Exception as e:
                 logger.error(f"Error loading MCP configuration: {e}")
 
-        # Server processes
-        self.server_processes: Dict[str, subprocess.Popen] = {}
-
-        self.session: Optional[aiohttp.ClientSession] = None
-
-    async def _ensure_session(self):
-        """Ensure aiohttp session exists."""
-        if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
-
     async def start_servers(self):
-        """Start MCP servers based on configuration."""
-        for server_name, server_config in self.mcp_servers.items():
-            try:
-                command = server_config.get("command")
-                args = server_config.get("args", [])
-                env_vars = server_config.get("env", {})
-
-                # Prepare environment
-                env = os.environ.copy()
-                env.update(env_vars)
-
-                # Build command
-                cmd = [command] + args
-
-                logger.info(
-                    f"Starting MCP server: {server_name} with command: {' '.join(cmd)}"
-                )
-
-                # Start the process
-                process = subprocess.Popen(
-                    cmd,
-                    env=env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-
-                self.server_processes[server_name] = process
-                logger.info(f"Started MCP server: {server_name} (PID: {process.pid})")
-
-            except Exception as e:
-                logger.error(f"Error starting MCP server {server_name}: {e}")
+        """Start all configured MCP servers."""
+        for server in self.servers.values():
+            if server.command:  # Only start servers with commands
+                await server.start()
 
     async def stop_servers(self):
         """Stop all running MCP servers."""
-        for server_name, process in self.server_processes.items():
-            try:
-                logger.info(f"Stopping MCP server: {server_name} (PID: {process.pid})")
+        for server in self.servers.values():
+            await server.stop()
 
-                # Try to terminate gracefully first
-                process.terminate()
-
-                # Wait for a short timeout
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    logger.warning(
-                        f"Server {server_name} did not terminate gracefully, forcing kill"
-                    )
-                    process.kill()
-
-                logger.info(f"Stopped MCP server: {server_name}")
-            except Exception as e:
-                logger.error(f"Error stopping MCP server {server_name}: {e}")
-
-        # Clear process dictionary
-        self.server_processes.clear()
-
-        # Close HTTP session if open
-        if self.session and not self.session.closed:
-            await self.session.close()
-
-    async def __aenter__(self):
-        """Start servers and session when used as async context manager."""
-        await self.start_servers()
-        await self._ensure_session()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Stop servers and session when exiting async context manager."""
-        await self.stop_servers()
-
+    # Convenience methods that delegate to the appropriate server
     async def create_memory_entity(
         self, name: str, entity_type: str, observations: List[str]
     ) -> Dict[str, Any]:
-        """Create an entity in the memory server.
+        """Create an entity in the memory server."""
+        return await self.memory_server.create_memory_entity(name, entity_type, observations)
 
-        Args:
-            name: Entity name
-            entity_type: Type of entity
-            observations: List of observations
+    async def retrieve_entity(self, name: str) -> Dict[str, Any]:
+        """Retrieve an entity from the memory server."""
+        return await self.memory_server.retrieve_entity(name)
 
-        Returns:
-            The created entity
-        """
-        await self._ensure_session()
-
-        payload = {
-            "entities": [
-                {"name": name, "entityType": entity_type, "observations": observations}
-            ]
-        }
-
-        try:
-            url = f"{self.memory_endpoint}/mcp_memory_create_entities"
-            async with self.session.post(url, json=payload) as response:
-                response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError as e:
-            logger.error(f"Error creating memory entity: {e}")
-            raise
-
-    async def create_memory_relation(
-        self, from_entity: str, to_entity: str, relation_type: str
-    ) -> Dict[str, Any]:
-        """Create a relation between entities in memory.
-
-        Args:
-            from_entity: Source entity name
-            to_entity: Target entity name
-            relation_type: Type of relation
-
-        Returns:
-            The created relation
-        """
-        await self._ensure_session()
-
-        payload = {
-            "relations": [
-                {"from": from_entity, "to": to_entity, "relationType": relation_type}
-            ]
-        }
-
-        try:
-            url = f"{self.memory_endpoint}/mcp_memory_create_relations"
-            async with self.session.post(url, json=payload) as response:
-                response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError as e:
-            logger.error(f"Error creating memory relation: {e}")
-            raise
+    async def add_observation(self, name: str, observation: str) -> Dict[str, Any]:
+        """Add an observation to an entity in the memory server."""
+        return await self.memory_server.add_observation(name, observation)
 
     async def fetch_url(self, url: str, max_length: int = 5000) -> str:
-        """Fetch content from a URL.
+        """Fetch content from a URL."""
+        return await self.fetch_server.fetch_url(url, max_length)
 
-        Args:
-            url: The URL to fetch
-            max_length: Maximum length of content to return
+    async def fetch_and_extract(self, url: str, query: str, max_length: int = 5000) -> str:
+        """Fetch and extract information from a URL."""
+        return await self.fetch_server.fetch_and_extract(url, query, max_length)
 
-        Returns:
-            The fetched content
-        """
-        await self._ensure_session()
+    async def navigate(self, url: str) -> Dict[str, Any]:
+        """Navigate to a URL using Puppeteer."""
+        return await self.puppeteer_server.navigate(url)
 
-        payload = {"url": url, "max_length": max_length}
+    async def click(self, selector: str) -> Dict[str, Any]:
+        """Click on an element using Puppeteer."""
+        return await self.puppeteer_server.click(selector)
 
-        try:
-            endpoint = f"{self.fetch_endpoint}/mcp_fetch_fetch"
-            async with self.session.post(endpoint, json=payload) as response:
-                response.raise_for_status()
-                result = await response.json()
-                return result.get("content", "")
-        except aiohttp.ClientError as e:
-            logger.error(f"Error fetching URL: {e}")
-            raise
+    async def type(self, selector: str, text: str) -> Dict[str, Any]:
+        """Type text into an element using Puppeteer."""
+        return await self.puppeteer_server.type(selector, text)
 
-    async def sequential_thinking(
-        self, thought: str, thought_number: int = 1, total_thoughts: int = 5
+    async def screenshot(self, selector: Optional[str] = None, full_page: bool = False) -> str:
+        """Take a screenshot using Puppeteer."""
+        return await self.puppeteer_server.screenshot(selector, full_page)
+
+    async def think(
+        self,
+        thought: str,
+        thought_number: int,
+        total_thoughts: int,
+        next_thought_needed: bool = True,
     ) -> Dict[str, Any]:
-        """Use sequential thinking to break down complex problems.
+        """Execute a sequential thinking step."""
+        return await self.sequential_thinking_server.think(
+            thought, thought_number, total_thoughts, next_thought_needed
+        )
 
-        Args:
-            thought: The current thought
-            thought_number: Current thought number
-            total_thoughts: Estimated total thoughts
+    async def start_thinking(self, initial_thought: str, estimated_steps: int) -> Dict[str, Any]:
+        """Start a sequential thinking process."""
+        return await self.sequential_thinking_server.start_thinking(
+            initial_thought, estimated_steps
+        )
 
-        Returns:
-            Result of the sequential thinking process
-        """
-        await self._ensure_session()
+    async def conclude_thinking(
+        self, final_thought: str, thought_number: int, total_thoughts: int
+    ) -> Dict[str, Any]:
+        """Conclude a sequential thinking process."""
+        return await self.sequential_thinking_server.conclude_thinking(
+            final_thought, thought_number, total_thoughts
+        )
 
-        payload = {
-            "thought": thought,
-            "thoughtNumber": thought_number,
-            "totalThoughts": total_thoughts,
-            "nextThoughtNeeded": True,
-        }
+    async def __aenter__(self):
+        """Async context manager entry."""
+        await self.start_servers()
+        return self
 
-        try:
-            endpoint = f"{self.sequential_thinking_endpoint}/mcp_sequential_thinking_sequentialthinking"
-            async with self.session.post(endpoint, json=payload) as response:
-                response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError as e:
-            logger.error(f"Error using sequential thinking: {e}")
-            raise
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.stop_servers()

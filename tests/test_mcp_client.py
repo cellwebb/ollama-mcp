@@ -160,8 +160,5 @@ class TestMCPClient:
 
         # Then
         mock_thinking_client.sequentialthinking.assert_called_once()
-        assert (
-            mock_thinking_client.sequentialthinking.call_args[0][0]["thought"]
-            == thought
-        )
+        assert mock_thinking_client.sequentialthinking.call_args[0][0]["thought"] == thought
         assert result == {"thought": "Mock thought"}

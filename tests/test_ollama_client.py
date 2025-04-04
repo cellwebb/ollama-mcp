@@ -107,8 +107,8 @@ class TestOllamaClient:
         mock_response.json.return_value = {"error": "Invalid model"}
         mock_response.text.return_value = "Invalid model"
 
-        with mock.patch(
-            "aiohttp.ClientSession.post", return_value=mock_response
-        ), pytest.raises(ValueError, match="Error from Ollama API: Invalid model"):
+        with mock.patch("aiohttp.ClientSession.post", return_value=mock_response), pytest.raises(
+            ValueError, match="Error from Ollama API: Invalid model"
+        ):
             # When/Then
             await client.generate(prompt="Test prompt")

@@ -109,9 +109,7 @@ def register_commands(bot: commands.Bot):
                 await ctx.reply(response)
             except Exception as e:
                 logger.exception(f"Error processing chat message: {e}")
-                await ctx.reply(
-                    f"An error occurred while processing your message: {str(e)}"
-                )
+                await ctx.reply(f"An error occurred while processing your message: {str(e)}")
 
     # Model selection command
     @bot.command(name="model")
@@ -152,18 +150,14 @@ def register_commands(bot: commands.Bot):
                 memory_id = await session.create_memory(content)
 
                 # Confirm to the user
-                await ctx.reply(
-                    f"I'll remember that! Memory created with ID: {memory_id}"
-                )
+                await ctx.reply(f"I'll remember that! Memory created with ID: {memory_id}")
             except Exception as e:
                 logger.exception(f"Error creating memory: {e}")
                 await ctx.reply(f"An error occurred while creating memory: {str(e)}")
 
     # Add or remove trigger words command
     @bot.command(name="trigger")
-    async def trigger(
-        ctx: commands.Context, action: str, word: str, *, response: str = None
-    ):
+    async def trigger(ctx: commands.Context, action: str, word: str, *, response: str = None):
         """Add or remove trigger words.
 
         Usage:
@@ -233,9 +227,7 @@ def register_commands(bot: commands.Bot):
         )
 
         # Add command fields to the embed
-        embed.add_field(
-            name="!chat <message>", value="Chat with the AI model", inline=False
-        )
+        embed.add_field(name="!chat <message>", value="Chat with the AI model", inline=False)
 
         embed.add_field(
             name="!model <name>", value="Change which Ollama model to use", inline=False
@@ -253,9 +245,7 @@ def register_commands(bot: commands.Bot):
             inline=False,
         )
 
-        embed.add_field(
-            name="!trigger remove <word>", value="Remove a trigger word", inline=False
-        )
+        embed.add_field(name="!trigger remove <word>", value="Remove a trigger word", inline=False)
 
         embed.add_field(name="!triggers", value="List all trigger words", inline=False)
 

@@ -14,9 +14,7 @@ class TestSession:
     @pytest.fixture
     def mock_ollama_client(self, mocker: MockerFixture):
         """Create a mock OllamaClient."""
-        client = mocker.patch(
-            "ollama_mcp_discord.ollama.client.OllamaClient", autospec=True
-        )
+        client = mocker.patch("ollama_mcp_discord.ollama.client.OllamaClient", autospec=True)
         client_instance = client.return_value
         client_instance.generate.return_value = "Mock response"
         client_instance.list_models.return_value = [
@@ -40,9 +38,7 @@ class TestSession:
             return Session(user_id=123, model_name="llama3")
 
     @pytest.mark.asyncio
-    async def test_process_message_returns_ai_response(
-        self, session, mock_ollama_client
-    ):
+    async def test_process_message_returns_ai_response(self, session, mock_ollama_client):
         """
         Given a user message
         When processing the message
@@ -79,9 +75,7 @@ class TestSession:
         assert session.ollama_client.model == "mistral"
 
     @pytest.mark.asyncio
-    async def test_set_model_raises_error_for_invalid_model(
-        self, session, mock_ollama_client
-    ):
+    async def test_set_model_raises_error_for_invalid_model(self, session, mock_ollama_client):
         """
         Given an invalid model name
         When setting the model
@@ -115,9 +109,7 @@ class TestSession:
         )
 
     @pytest.mark.asyncio
-    async def test_generate_response_uses_conversation_history(
-        self, session, mock_ollama_client
-    ):
+    async def test_generate_response_uses_conversation_history(self, session, mock_ollama_client):
         """
         Given previous conversation history
         When generating a response

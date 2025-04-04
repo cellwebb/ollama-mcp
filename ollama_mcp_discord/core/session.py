@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 class Session:
     """User session for managing conversations and MCP integrations."""
 
-    def __init__(
-        self, user_id: int, model_name: str, mcp_client: Optional[MCPClient] = None
-    ):
+    def __init__(self, user_id: int, model_name: str, mcp_client: Optional[MCPClient] = None):
         """Initialize a new session for a user.
 
         Args:
@@ -135,8 +133,6 @@ class Session:
             The formatted history
         """
         # Only include the most recent messages to stay within context limits
-        recent_messages = (
-            self.messages[-10:] if len(self.messages) > 10 else self.messages
-        )
+        recent_messages = self.messages[-10:] if len(self.messages) > 10 else self.messages
 
         return recent_messages

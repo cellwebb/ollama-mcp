@@ -6,8 +6,12 @@ import nextcord
 import pytest
 from pytest_mock import MockerFixture
 
-from ollama_mcp_discord.discord.bot import (TRIGGER_RESPONSES, TRIGGER_WORDS,
-                                            create_bot, register_commands)
+from ollama_mcp_discord.discord.bot import (
+    TRIGGER_RESPONSES,
+    TRIGGER_WORDS,
+    create_bot,
+    register_commands,
+)
 
 
 class TestDiscordBot:
@@ -120,9 +124,7 @@ class TestDiscordBot:
                     message_lower = message.content.lower()
                     for word in TRIGGER_WORDS:
                         if word in message_lower.split():
-                            response = TRIGGER_RESPONSES.get(
-                                word, f"I noticed you said '{word}'!"
-                            )
+                            response = TRIGGER_RESPONSES.get(word, f"I noticed you said '{word}'!")
                             await message.reply(response)
                             break
 
@@ -193,9 +195,7 @@ class TestDiscordBot:
             TRIGGER_RESPONSES = original_trigger_responses
 
     @pytest.mark.asyncio
-    async def test_trigger_command_removes_existing_trigger_word(
-        self, mock_bot, mock_ctx
-    ):
+    async def test_trigger_command_removes_existing_trigger_word(self, mock_bot, mock_ctx):
         """
         Given parameters to remove an existing trigger word
         When the trigger command is called
