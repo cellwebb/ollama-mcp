@@ -1,0 +1,73 @@
+[project]
+name = "ollama-mcp-discord"
+version = "0.1.0"
+description = "A Discord bot powered by Ollama and MCP servers"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "nextcord>=3.0.0",
+    "aiohttp>=3.8.5",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.4.0",
+    "ollama>=0.1.5"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "pytest-asyncio>=0.21.1",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.0",
+    "types-requests>=2.31.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+ollama-mcp-discord = "ollama_mcp_discord.__main__:main"
+
+[tool.uv]
+# uv-specific configuration
+python-preference = "system"
+resolution = "highest"
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ollama_mcp_discord"]
+
+[tool.flake8]
+max-line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "tests/"
+]
+# Optional: ignore specific error codes if needed
+ignore = [] 
