@@ -1,11 +1,8 @@
 """Common test fixtures and configurations."""
 
-import os
 import uuid
-from unittest import mock
 
 import pytest
-import pytest_asyncio
 
 from ollama_mcp_discord.core.session import Session
 from ollama_mcp_discord.mcp.client import MCPClient

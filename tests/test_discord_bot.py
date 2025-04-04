@@ -1,7 +1,5 @@
 """Tests for the Discord bot module."""
 
-from unittest import mock
-
 import nextcord
 import pytest
 from pytest_mock import MockerFixture
