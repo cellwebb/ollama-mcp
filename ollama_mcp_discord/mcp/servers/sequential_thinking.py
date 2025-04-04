@@ -1,7 +1,7 @@
 """Sequential Thinking MCP server implementation."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 
@@ -92,9 +92,7 @@ class SequentialThinkingMCPServer(BaseMCPServer):
             next_thought_needed=True,
         )
 
-    async def conclude_thinking(
-        self, final_thought: str, thought_number: int, total_thoughts: int
-    ) -> Dict[str, Any]:
+    async def conclude_thinking(self, final_thought: str, thought_number: int, total_thoughts: int) -> Dict[str, Any]:
         """Conclude a sequential thinking process.
 
         Args:

@@ -3,7 +3,7 @@
 import logging
 import os
 import subprocess
-from typing import Any, Dict, Generic, List, Optional, Protocol, TypeVar
+from typing import Dict, List, Optional, Protocol, TypeVar
 
 import aiohttp
 
@@ -70,9 +70,7 @@ class BaseMCPServer:
 
                 logger.info(f"Starting MCP server: {self.name}")
 
-                self.process = subprocess.Popen(
-                    cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-                )
+                self.process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
                 logger.info(f"Started {self.name} (PID: {self.process.pid})")
             except Exception as e:

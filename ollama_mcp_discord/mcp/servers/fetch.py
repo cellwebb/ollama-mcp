@@ -1,7 +1,6 @@
 """Fetch MCP server implementation."""
 
 import logging
-from typing import Any, Dict, Optional
 
 import aiohttp
 
@@ -13,9 +12,7 @@ logger = logging.getLogger(__name__)
 class FetchMCPServer(BaseMCPServer):
     """Fetch MCP server for retrieving content from URLs."""
 
-    async def fetch_url(
-        self, url: str, max_length: int = 5000, raw: bool = False, start_index: int = 0
-    ) -> str:
+    async def fetch_url(self, url: str, max_length: int = 5000, raw: bool = False, start_index: int = 0) -> str:
         """Fetch content from a URL.
 
         Args:
@@ -31,9 +28,7 @@ class FetchMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_fetch_fetch", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_fetch_fetch", json=payload) as response:
                     response.raise_for_status()
                     result = await response.json()
                     return result.get("content", "")
@@ -56,9 +51,7 @@ class FetchMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_fetch_extract", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_fetch_extract", json=payload) as response:
                     response.raise_for_status()
                     result = await response.json()
                     return result.get("content", "")

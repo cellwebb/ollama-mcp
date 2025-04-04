@@ -1,7 +1,5 @@
 """Session management for user conversations."""
 
-import asyncio
-import json
 import logging
 import os
 import uuid
@@ -29,9 +27,7 @@ class Session:
         self.conversation_id = str(uuid.uuid4())
 
         # Initialize clients
-        self.ollama_client = OllamaClient(
-            host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name
-        )
+        self.ollama_client = OllamaClient(host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name)
         # Use provided MCP client or create a new one
         self.mcp_client = mcp_client or MCPClient()
 
@@ -87,9 +83,7 @@ class Session:
         memory_id = str(uuid.uuid4())
 
         # Create memory entity
-        await self.mcp_client.create_memory_entity(
-            name=memory_id, entity_type="UserMemory", observations=[content]
-        )
+        await self.mcp_client.create_memory_entity(name=memory_id, entity_type="UserMemory", observations=[content])
 
         return memory_id
 
@@ -120,9 +114,7 @@ class Session:
         history = self._format_conversation_history()
 
         # Generate response with Ollama
-        response = await self.ollama_client.generate(
-            prompt=user_message, system=system_prompt, context=history
-        )
+        response = await self.ollama_client.generate(prompt=user_message, system=system_prompt, context=history)
 
         return response
 

@@ -1,7 +1,7 @@
 """Puppeteer MCP server implementation."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 
@@ -26,9 +26,7 @@ class PuppeteerMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_puppeteer_navigate", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_puppeteer_navigate", json=payload) as response:
                     response.raise_for_status()
                     return await response.json()
         except Exception as e:
@@ -48,9 +46,7 @@ class PuppeteerMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_puppeteer_click", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_puppeteer_click", json=payload) as response:
                     response.raise_for_status()
                     return await response.json()
         except Exception as e:
@@ -71,9 +67,7 @@ class PuppeteerMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_puppeteer_type", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_puppeteer_type", json=payload) as response:
                     response.raise_for_status()
                     return await response.json()
         except Exception as e:
@@ -94,9 +88,7 @@ class PuppeteerMCPServer(BaseMCPServer):
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.endpoint}/mcp_puppeteer_screenshot", json=payload
-                ) as response:
+                async with session.post(f"{self.endpoint}/mcp_puppeteer_screenshot", json=payload) as response:
                     response.raise_for_status()
                     result = await response.json()
                     return result.get("screenshot", "")

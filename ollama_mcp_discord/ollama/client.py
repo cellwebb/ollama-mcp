@@ -1,6 +1,5 @@
 """Client for interacting with Ollama API."""
 
-import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -10,21 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaClient:
-    """Client for interacting with the Ollama API."""
+    """Client for interacting with Ollama API."""
 
     def __init__(self, host: str, model: str):
         """Initialize the Ollama client.
 
         Args:
-            host: The Ollama API host URL
-            model: The default model to use
+            host: Base URL for the Ollama server
+            model: Name of the model to use
         """
         self.host = host.rstrip("/")
         self.model = model
         self.session: Optional[aiohttp.ClientSession] = None
 
     async def _ensure_session(self):
-        """Ensure aiohttp session exists."""
+        """Ensure a client session is created."""
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
 
@@ -34,19 +33,25 @@ class OllamaClient:
         system: Optional[str] = None,
         context: Optional[List[Any]] = None,
     ) -> str:
-        """Generate a response from the model.
+        """Generate a response from the Ollama model.
 
         Args:
-            prompt: The prompt text
-            system: Optional system prompt
-            context: Optional conversation context
+            prompt: Input prompt
+            system: Optional system message
+            context: Optional context for conversation
 
         Returns:
-            The generated text
+            Generated response
         """
         await self._ensure_session()
 
-        payload = {"model": self.model, "prompt": prompt, "stream": False}
+        # Ensure session is not None (mypy can't infer this from _ensure_session)
+        assert self.session is not None, "Client session must be initialized"
+
+        payload: Dict[str, Any] = {
+            "model": self.model,
+            "prompt": prompt,
+        }
 
         if system:
             payload["system"] = system
@@ -71,6 +76,9 @@ class OllamaClient:
             List of available models
         """
         await self._ensure_session()
+
+        # Ensure session is not None (mypy can't infer this from _ensure_session)
+        assert self.session is not None, "Client session must be initialized"
 
         try:
             url = f"{self.host}/api/tags"

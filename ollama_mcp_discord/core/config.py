@@ -37,9 +37,7 @@ class Configuration:
         # MCP server endpoints
         self.memory_server_endpoint = os.getenv("MEMORY_SERVER_ENDPOINT", "http://localhost:3100")
         self.fetch_server_endpoint = os.getenv("FETCH_SERVER_ENDPOINT", "http://localhost:3101")
-        self.puppeteer_server_endpoint = os.getenv(
-            "PUPPETEER_SERVER_ENDPOINT", "http://localhost:3102"
-        )
+        self.puppeteer_server_endpoint = os.getenv("PUPPETEER_SERVER_ENDPOINT", "http://localhost:3102")
         self.sequential_thinking_server_endpoint = os.getenv(
             "SEQUENTIAL_THINKING_SERVER_ENDPOINT", "http://localhost:3103"
         )
@@ -72,7 +70,7 @@ class Configuration:
             raise ConfigurationError(f"Required environment variable {name} not set")
         return value
 
-    def _parse_list_env(self, name: str, default: List[str] = None) -> List[str]:
+    def _parse_list_env(self, name: str, default: List[str] = []) -> List[str]:
         """Parse a comma-separated list from an environment variable.
 
         Args:
@@ -84,7 +82,7 @@ class Configuration:
         """
         value = os.getenv(name)
         if not value:
-            return default or []
+            return default
         return [item.strip() for item in value.split(",")]
 
     def _load_env_file(self, env_file: str) -> None:
@@ -123,9 +121,7 @@ class Configuration:
                 if os.path.exists(home_config):
                     config_path = home_config
                 else:
-                    logger.warning(
-                        f"MCP configuration file not found at {config_path} " f"or {home_config}"
-                    )
+                    logger.warning(f"MCP configuration file not found at {config_path} " f"or {home_config}")
                     return {}
 
         # Load configuration

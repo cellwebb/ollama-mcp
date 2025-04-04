@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Dict, List, Optional, Set
+from typing import Dict, Optional, Set
 
 import nextcord
 from nextcord.ext import commands
@@ -47,6 +47,10 @@ def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
     @bot.event
     async def on_ready():
         """Handle bot ready event."""
+        if bot.user is None:
+            logger.error("Bot user is None")
+            return
+
         logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
         logger.info(f"Connected to {len(bot.guilds)} guilds")
         if mcp_client:
@@ -157,7 +161,7 @@ def register_commands(bot: commands.Bot):
 
     # Add or remove trigger words command
     @bot.command(name="trigger")
-    async def trigger(ctx: commands.Context, action: str, word: str, *, response: str = None):
+    async def trigger(ctx: commands.Context, action: str, word: str, *, response: str = "") -> None:
         """Add or remove trigger words.
 
         Usage:
@@ -229,9 +233,7 @@ def register_commands(bot: commands.Bot):
         # Add command fields to the embed
         embed.add_field(name="!chat <message>", value="Chat with the AI model", inline=False)
 
-        embed.add_field(
-            name="!model <name>", value="Change which Ollama model to use", inline=False
-        )
+        embed.add_field(name="!model <name>", value="Change which Ollama model to use", inline=False)
 
         embed.add_field(
             name="!remember <content>",
