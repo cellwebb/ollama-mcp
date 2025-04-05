@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from ollama_mcp_discord.core.settings import settings
-from ollama_mcp_discord.mcp.client import MCPClient
+from ollama_mcp_discord.mcp.sdk_client import MCPSDKClient
 from ollama_mcp_discord.ollama.client import OllamaClient
 from ollama_mcp_discord.system_message import get_system_message
 
@@ -20,7 +20,7 @@ class Session:
         user_id: int,
         model_name: Optional[str] = None,
         ollama_client: Optional[OllamaClient] = None,
-        mcp_client: Optional[MCPClient] = None,
+        mcp_client: Optional[MCPSDKClient] = None,
     ):
         """Initialize a new session for a user.
 
@@ -37,7 +37,7 @@ class Session:
         # Initialize clients
         self.ollama_client = ollama_client or OllamaClient(model=self.model_name)
         # Use provided MCP client or create a new one
-        self.mcp_client = mcp_client or MCPClient()
+        self.mcp_client = mcp_client or MCPSDKClient()
 
         # Conversation history
         self.messages: List[Dict[str, Any]] = []
@@ -111,7 +111,7 @@ class Session:
 
         memory_id = str(uuid.uuid4())
 
-        # Create memory entity
+        # Create memory entity using the MCP SDK client
         await self.mcp_client.create_memory_entity(name=memory_id, entity_type="UserMemory", observations=[content])
 
         return memory_id
@@ -172,7 +172,7 @@ class Session:
         if not initial_thought or initial_thought.strip() == "":
             raise ValueError("Initial thought cannot be empty")
 
-        # Use the MCP client to perform sequential thinking
+        # Use the MCP SDK client to perform sequential thinking
         current_thought_dict = {
             "thought": initial_thought,
             "thoughtNumber": 1,

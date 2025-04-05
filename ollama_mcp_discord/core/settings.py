@@ -13,6 +13,14 @@ class MCPServerSettings(BaseModel):
     args: List[str] = Field(default_factory=list)
     env: Dict[str, str] = Field(default_factory=dict)
 
+    # Daemon-related settings
+    daemon_enabled: bool = Field(default=False, description="Whether to run the server as a daemon")
+    pid_file: Optional[str] = Field(None, description="Path to the PID file for the daemon")
+    log_file: Optional[str] = Field(None, description="Path to the log file for the daemon")
+    working_dir: Optional[str] = Field(None, description="Working directory for the daemon")
+    auto_restart: bool = Field(default=False, description="Whether to automatically restart the daemon if it fails")
+    restart_delay: int = Field(default=5, description="Delay in seconds before restarting the daemon")
+
 
 class Settings(BaseSettings):
     """Main configuration settings for the Ollama-MCP Discord bot."""
@@ -74,6 +82,14 @@ class Settings(BaseSettings):
                     # Convert the raw dict to MCPServerSettings objects
                     mcp_servers = {}
                     for server_name, server_config in config.get("mcpServers", {}).items():
+                        # Set default daemon settings if not provided
+                        server_config.setdefault("daemon_enabled", False)
+                        server_config.setdefault("pid_file", f"/tmp/{server_name}_mcp_server.pid")
+                        server_config.setdefault("log_file", f"/tmp/{server_name}_mcp_server.log")
+                        server_config.setdefault("working_dir", os.getcwd())
+                        server_config.setdefault("auto_restart", False)
+                        server_config.setdefault("restart_delay", 5)
+
                         mcp_servers[server_name] = MCPServerSettings(**server_config)
                     values["mcp_servers"] = mcp_servers
             except Exception as e:

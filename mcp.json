@@ -22,6 +22,32 @@
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "memory_server": {
+      "command": "python",
+      "args": ["-m", "mcp_server", "memory"],
+      "env": {
+        "MCP_PORT": "3100"
+      },
+      "daemon_enabled": true,
+      "pid_file": "/var/run/mcp_memory_server.pid",
+      "log_file": "/var/log/mcp_memory_server.log",
+      "working_dir": "/opt/ollama-mcp",
+      "auto_restart": true,
+      "restart_delay": 10
+    },
+    "fetch_server": {
+      "command": "python",
+      "args": ["-m", "mcp_server", "fetch"],
+      "env": {
+        "MCP_PORT": "3101"
+      },
+      "daemon_enabled": true,
+      "pid_file": "/var/run/mcp_fetch_server.pid",
+      "log_file": "/var/log/mcp_fetch_server.log",
+      "working_dir": "/opt/ollama-mcp",
+      "auto_restart": true,
+      "restart_delay": 10
     }
   }
 }
