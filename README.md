@@ -1,4 +1,4 @@
-# Ollama-MCP Discord Bot
+# Ollama MCP Discord Bot
 
 A Discord bot powered by Ollama and MCP servers, providing AI-powered interactions.
 
@@ -93,79 +93,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Features
 
-- Connect to local Ollama models
-- Access MCP capabilities (memory, fetch, puppeteer, sequential thinking)
-- User-friendly Discord bot interface with text commands
-- Respond to specific trigger words in normal messages
-- Multi-user conversation support
-- Configurable model selection
-- **Customizable system message for AI model behavior**
+- Chat with AI models using Discord
+- Select different AI models
+- Create and manage memories
+- Set custom system messages
 
 ## Commands
 
-### System Message Commands
+### Basic Commands
 
-You can set a custom system message to guide the AI model's behavior:
-
-1. **Slash Command**:
-
-   ```bash
-   /set_system_message <your system message>
-   ```
-
-2. **Text Command**:
-
-   ```bash
-   !system_message <your system message>
-   ```
-
-The system message is persistent across conversations and stored in `~/.mcp_system_message.json`.
-
-Example:
-
-```bash
-!system_message You are a helpful coding assistant who explains complex programming concepts in simple terms.
-```
-
-### Other Commands
-
-- `!chat <message>` - Have a conversation with the AI model
-
-  ```text
-  !chat What is the capital of France?
-  !chat Can you help me with Python programming?
-  ```
-
-- `!model <model_name>` - Switch to a different Ollama model
-
-  ```text
-  !model llama3
-  !model mistral
-  ```
-
-- `!remember <content>` - Store information in the AI's memory
-
-  ```text
-  !remember My favorite color is blue
-  !remember Python is a programming language
-  ```
-
-- `!trigger add <word> <response>` - Add a custom trigger word and response
-
-  ```text
-  !trigger add hey Hello there!
-  !trigger add python I love coding in Python!
-  ```
-
-- `!trigger remove <word>` - Remove a trigger word
-
-  ```text
-  !trigger remove hey
-  ```
-
-- `!triggers` - List all active trigger words and their responses
-
-- `!help` - Display help information about all available commands
+- `!chat <message>` - Chat with the AI model
+- `!model <model_name>` - Select a different AI model
+- `!remember <content>` - Create a new memory
+- `!system_message <message>` - Set a custom system message for the AI
+- `!help` - Show available commands
 
 ## Quick Start
 
@@ -341,31 +282,19 @@ The bot provides several ways to interact:
   !remember Python is a programming language
   ```
 
-- `!trigger add <word> <response>` - Add a custom trigger word and response
-
   ```text
-  !trigger add hey Hello there!
-  !trigger add python I love coding in Python!
+
   ```
 
-- `!trigger remove <word>` - Remove a trigger word
-
   ```text
-  !trigger remove hey
-  ```
 
-- `!triggers` - List all active trigger words and their responses
+  ```
 
 - `!help` - Display help information about all available commands
 
 ### Automatic Responses
 
-The bot automatically responds to certain trigger words in normal conversation:
-
-- Default trigger words: "hello", "hey", "ollama", "ai", "bot"
-- You can add or remove trigger words using the `!trigger` command
 - The bot only responds to whole words, not parts of words
-- Only the first trigger word in a message gets a response
 
 ### Tips
 

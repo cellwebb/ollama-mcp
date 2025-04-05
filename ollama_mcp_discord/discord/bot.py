@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Dict, Optional, Set
+from typing import Dict, Optional
 
 import aiohttp
 import nextcord
@@ -20,16 +20,6 @@ user_sessions: Dict[int, Session] = {}
 
 # Shared MCP client
 mcp_client: Optional[MCPClient] = None
-
-# Trigger words that the bot will respond to
-TRIGGER_WORDS: Set[str] = {"hello", "hey", "ollama", "ai", "bot"}
-TRIGGER_RESPONSES: Dict[str, str] = {
-    "hello": "Hello there! How can I help you today?",
-    "hey": "Hey! Need something from me?",
-    "ollama": "You mentioned Ollama! I'm powered by Ollama models.",
-    "ai": "AI is my specialty! What would you like to know?",
-    "bot": "I'm your friendly neighborhood bot! Type !help to see what I can do.",
-}
 
 
 def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
@@ -64,7 +54,7 @@ def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
     # Message event listener for triggering on specific words
     @bot.event
     async def on_message(message):
-        """Process messages and respond to trigger words."""
+        """Process messages."""
         # Ignore messages from bots (including self) to prevent loops
         if message.author.bot:
             return
@@ -74,15 +64,6 @@ def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
             # Process commands as normal
             await bot.process_commands(message)
             return
-
-        # Check if message contains any trigger words
-        message_lower = message.content.lower()
-        for word in TRIGGER_WORDS:
-            if word in message_lower.split():
-                response = TRIGGER_RESPONSES.get(word, f"I noticed you said '{word}'!")
-                await message.reply(response)
-                # Only respond to the first trigger word found
-                break
 
         # Make sure other commands still work
         await bot.process_commands(message)
@@ -197,64 +178,6 @@ def register_commands(bot: commands.Bot):
                 logger.exception(f"Error creating memory: {e}")
                 await ctx.reply(f"An error occurred while creating memory: {str(e)}")
 
-    # Add or remove trigger words command
-    @bot.command(name="trigger")
-    async def trigger(ctx: commands.Context, action: str, word: str, *, response: str = "") -> None:
-        """Add or remove trigger words.
-
-        Usage:
-        !trigger add <word> <response>
-        !trigger remove <word>
-        """
-        global TRIGGER_WORDS, TRIGGER_RESPONSES
-
-        action = action.lower()
-        word = word.lower()
-
-        if action == "add":
-            if not response:
-                await ctx.reply("Please provide a response for this trigger word.")
-                return
-
-            TRIGGER_WORDS.add(word)
-            TRIGGER_RESPONSES[word] = response
-            await ctx.reply(f"Added trigger word: '{word}' with response: '{response}'")
-
-        elif action == "remove":
-            if word in TRIGGER_WORDS:
-                TRIGGER_WORDS.remove(word)
-                if word in TRIGGER_RESPONSES:
-                    del TRIGGER_RESPONSES[word]
-                await ctx.reply(f"Removed trigger word: '{word}'")
-            else:
-                await ctx.reply(f"Trigger word '{word}' not found.")
-
-        else:
-            await ctx.reply("Invalid action. Use 'add' or 'remove'.")
-
-    # List trigger words command
-    @bot.command(name="triggers")
-    async def triggers(ctx: commands.Context):
-        """List all trigger words and their responses.
-
-        Usage: !triggers
-        """
-        if not TRIGGER_WORDS:
-            await ctx.reply("No trigger words are set.")
-            return
-
-        embed = nextcord.Embed(
-            title="Trigger Words",
-            description="Words that will trigger a response:",
-            color=nextcord.Color.green(),
-        )
-
-        for word in TRIGGER_WORDS:
-            response = TRIGGER_RESPONSES.get(word, "No response set")
-            embed.add_field(name=word, value=response, inline=False)
-
-        await ctx.reply(embed=embed)
-
     # System message command
     @bot.command(name="system_message")
     async def system_message_command(ctx: commands.Context, *, message: str):
@@ -295,24 +218,6 @@ def register_commands(bot: commands.Bot):
         embed.add_field(
             name="!remember <content>",
             value="Store information in the AI's memory",
-            inline=False,
-        )
-
-        embed.add_field(
-            name="!trigger add <word> <response>",
-            value="Add a trigger word that the bot will respond to",
-            inline=False,
-        )
-
-        embed.add_field(
-            name="!trigger remove <word>",
-            value="Remove a trigger word",
-            inline=False,
-        )
-
-        embed.add_field(
-            name="!triggers",
-            value="List all trigger words and their responses",
             inline=False,
         )
 
