@@ -12,7 +12,7 @@ dependencies = [
     "ollama>=0.1.5",
     "httpx>=0.24.0",
     "python-daemon>=3.0.0",
-    "langchain>=0.1.0",
+    "mcp>=0.1.15",
     "structlog>=23.1.0"
 ]
 
