@@ -119,7 +119,32 @@ DEFAULT_MODEL=llama3
 
 ## MCP Server Configuration
 
-The Ollama-MCP Discord bot can interact with various MCP servers. To configure these servers, create a `mcp.json` file in the project root with the following structure:
+The Ollama-MCP Discord bot uses Model Context Protocol (MCP) servers to extend its capabilities. These servers provide specialized services like memory management, web fetching, browser automation, and sequential reasoning.
+
+### Server Types
+
+1. **Memory Server**: Stores and retrieves contextual information
+
+   - Default Endpoint: `http://localhost:3100`
+   - Package: `@modelcontextprotocol/server-memory`
+
+2. **Fetch Server**: Retrieves web content
+
+   - Default Endpoint: `http://localhost:3101`
+   - Package: `mcp-server-fetch`
+
+3. **Puppeteer Server**: Enables browser automation
+
+   - Default Endpoint: `http://localhost:3102`
+   - Package: `@modelcontextprotocol/server-puppeteer`
+
+4. **Sequential Thinking Server**: Supports multi-step reasoning
+   - Default Endpoint: `http://localhost:3103`
+   - Package: `@modelcontextprotocol/server-sequential-thinking`
+
+### Configuration File
+
+Create a `mcp.json` file in the project root to configure MCP servers:
 
 ```json
 {
@@ -128,7 +153,7 @@ The Ollama-MCP Discord bot can interact with various MCP servers. To configure t
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {
-        "MEMORY_FILE_PATH": "/Users/cell/.windsurf-memory.json"
+        "MEMORY_FILE_PATH": "/path/to/memory-storage.json"
       }
     },
     "fetch": {
@@ -139,8 +164,8 @@ The Ollama-MCP Discord bot can interact with various MCP servers. To configure t
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
       "env": {
-        "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": false}",
-        "ALLOW_DANGEROUS": "true"
+        "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": true}",
+        "ALLOW_DANGEROUS": "false"
       }
     },
     "sequential-thinking": {
@@ -151,20 +176,76 @@ The Ollama-MCP Discord bot can interact with various MCP servers. To configure t
 }
 ```
 
-### Starting the Bot
+### Manual Server Management
 
-To start the bot, run the following command:
+If automatic server startup fails, you can manually start servers:
 
 ```bash
-python -m ollama_mcp_discord
+# Memory Server
+npx -y @modelcontextprotocol/server-memory
+
+# Fetch Server
+uvx mcp-server-fetch
+
+# Puppeteer Server
+npx -y @modelcontextprotocol/server-puppeteer
+
+# Sequential Thinking Server
+npx -y @modelcontextprotocol/server-sequential-thinking
 ```
 
-The bot will automatically start the configured MCP servers.
+### Troubleshooting MCP Servers
+
+#### Common Issues
+
+1. **Server Not Starting**
+
+   - Ensure all required packages are installed
+   - Check that the specified command exists
+   - Verify network ports are available
+
+2. **Connection Errors**
+   - Confirm servers are running on expected ports
+   - Check firewall settings
+   - Ensure no other applications are using the ports
+
+#### Debugging Steps
+
+1. Verify server installation:
+
+   ```bash
+   npx -y @modelcontextprotocol/server-memory --version
+   ```
+
+2. Check port availability:
+
+   ```bash
+   # macOS/Linux
+   lsof -i :3100  # Replace with specific port
+
+   # Windows
+   netstat -ano | findstr :3100
+   ```
+
+3. Run servers with verbose logging:
+   ```bash
+   # Add verbose flag or environment variables for debugging
+   DEBUG=* npx -y @modelcontextprotocol/server-memory
+   ```
 
 ### Environment Variables
 
-- `DISCORD_TOKEN`: Required for the Discord bot to authenticate.
-- `MCP_CONFIG_PATH`: Optional path to the MCP configuration file (default: `mcp.json`).
+- `MEMORY_SERVER_ENDPOINT`: Custom memory server URL
+- `FETCH_SERVER_ENDPOINT`: Custom fetch server URL
+- `PUPPETEER_SERVER_ENDPOINT`: Custom puppeteer server URL
+- `SEQUENTIAL_THINKING_SERVER_ENDPOINT`: Custom sequential thinking server URL
+- `MCP_CONFIG_PATH`: Path to MCP configuration file (default: `mcp.json`)
+
+### Security Considerations
+
+- Use `ALLOW_DANGEROUS=false` for Puppeteer server
+- Set specific memory file paths
+- Limit server exposure to trusted networks
 
 ## Usage
 
