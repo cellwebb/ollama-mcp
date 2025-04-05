@@ -6,10 +6,12 @@ from typing import Dict, Optional, Set
 
 import aiohttp
 import nextcord
+from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
 
 from ollama_mcp_discord.core.session import Session
 from ollama_mcp_discord.mcp.client import MCPClient
+from ollama_mcp_discord.system_message import set_system_message
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +96,31 @@ def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
 def register_commands(bot: commands.Bot):
     """Register all text commands."""
 
+    # System message slash command
+    @bot.slash_command(name="set_system_message", description="Set the system message for the AI model")
+    async def set_system_message_command(
+        interaction: Interaction,
+        message: str = SlashOption(name="message", description="The system message to set", required=True),
+    ):
+        """Set the system message for the AI model.
+
+        Args:
+            interaction: The interaction object
+            message: The system message to set
+        """
+        # Defer the response to give us time to process
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            # Set the system message
+            set_system_message(message)
+
+            # Respond to the user
+            await interaction.followup.send("System message updated successfully!", ephemeral=True)
+        except Exception as e:
+            logger.exception(f"Error setting system message: {e}")
+            await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
+
     # Chat command
     @bot.command(name="chat")
     async def chat(ctx: commands.Context, *, message: str):
@@ -115,7 +142,9 @@ def register_commands(bot: commands.Bot):
             except aiohttp.ClientResponseError as e:
                 error_msg = f"API Error: {e.status} {e.message}"
                 if e.status == 400:
-                    error_msg += "\nThis could be due to an invalid model name or a model compatibility issue."
+                    error_msg += (
+                        "\nThis could be due to an invalid model name or a model compatibility issue."  # noqa: E501
+                    )
                     # Try using a different model
                     error_msg += "\nTry using a different model with: !model llama3.2:latest"
                 logger.error(error_msg)
@@ -226,6 +255,25 @@ def register_commands(bot: commands.Bot):
 
         await ctx.reply(embed=embed)
 
+    # System message command
+    @bot.command(name="system_message")
+    async def system_message_command(ctx: commands.Context, *, message: str):
+        """Set the system message for the AI model.
+
+        Usage: !system_message <message>
+        """
+        # Show typing indicator
+        async with ctx.typing():
+            try:
+                # Set the system message
+                set_system_message(message)
+
+                # Confirm to the user
+                await ctx.reply("System message updated successfully!")
+            except Exception as e:
+                logger.exception(f"Error setting system message: {e}")
+                await ctx.reply(f"An error occurred: {str(e)}")
+
     # Custom help command
     @bot.command(name="help")
     async def help_command(ctx: commands.Context):
@@ -242,7 +290,7 @@ def register_commands(bot: commands.Bot):
         # Add command fields to the embed
         embed.add_field(name="!chat <message>", value="Chat with the AI model", inline=False)
 
-        embed.add_field(name="!model <name>", value="Change which Ollama model to use", inline=False)
+        embed.add_field(name="!model <n>", value="Change which Ollama model to use", inline=False)
 
         embed.add_field(
             name="!remember <content>",
@@ -252,18 +300,33 @@ def register_commands(bot: commands.Bot):
 
         embed.add_field(
             name="!trigger add <word> <response>",
-            value="Add a word that the bot will respond to",
+            value="Add a trigger word that the bot will respond to",
             inline=False,
         )
 
-        embed.add_field(name="!trigger remove <word>", value="Remove a trigger word", inline=False)
+        embed.add_field(
+            name="!trigger remove <word>",
+            value="Remove a trigger word",
+            inline=False,
+        )
 
-        embed.add_field(name="!triggers", value="List all trigger words", inline=False)
+        embed.add_field(
+            name="!triggers",
+            value="List all trigger words and their responses",
+            inline=False,
+        )
 
-        embed.add_field(name="!help", value="Show this help message", inline=False)
+        embed.add_field(
+            name="/set_system_message <message>",
+            value="Set the system message for the AI model (slash command)",
+            inline=False,
+        )
 
-        # Add footer with additional info
-        embed.set_footer(text="Powered by Ollama and MCP")
+        embed.add_field(
+            name="!system_message <message>",
+            value="Set the system message for the AI model",
+            inline=False,
+        )
 
         await ctx.reply(embed=embed)
 

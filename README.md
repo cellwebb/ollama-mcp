@@ -329,3 +329,42 @@ Bot: I'll remember that! Memory created with ID: [memory_id]
 ## Development
 
 Check the ROADMAP.md file for implementation status and upcoming features.
+
+## System Message Management
+
+### Setting System Message
+
+You can set the system message for the model in two ways:
+
+1. Using a Slash Command:
+
+   ```
+   /set_system_message Your custom system message here
+   ```
+
+2. Programmatically:
+
+   ```python
+   from system_message import set_system_message
+
+   set_system_message("Your custom system message here")
+   ```
+
+### Retrieving System Message
+
+```python
+from system_message import get_system_message
+
+current_message = get_system_message()
+print(current_message)
+```
+
+### Clearing System Message
+
+```python
+from system_message import clear_system_message
+
+clear_system_message()
+```
+
+The system message is stored in `~/.mcp_system_message.json` and persists between sessions.

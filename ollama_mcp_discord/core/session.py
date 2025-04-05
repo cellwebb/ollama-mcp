@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from ollama_mcp_discord.mcp.client import MCPClient
 from ollama_mcp_discord.ollama.client import OllamaClient
+from ollama_mcp_discord.system_message import get_system_message
 
 logger = logging.getLogger(__name__)
 
@@ -103,8 +104,9 @@ class Session:
             The generated response
         """
         try:
-            # Build prompt with MCP tool context
-            system_prompt = "You are a helpful assistant."
+            # Get system message from file or use default
+            custom_system_message = get_system_message()
+            system_prompt = custom_system_message or "You are a helpful assistant."
 
             # Get conversation history formatted for Ollama
             history = self._format_conversation_history()

@@ -25,7 +25,7 @@ run:
 test:
 	@echo "Running tests..."
 	uv pip install .[dev]
-	uv run -- pytest tests/
+	python -m pytest tests/
 
 test-cov:
 	@echo "Running tests with coverage..."

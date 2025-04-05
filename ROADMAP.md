@@ -101,3 +101,4 @@ A one-day implementation plan to build a Python project connecting MCP servers t
 - [ ] Create admin commands for bot management
 - [ ] Add support for multiple Ollama models
 - [ ] Add custom trigger word persistence
+- [x] Add system message configuration capability
