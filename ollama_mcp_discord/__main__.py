@@ -9,7 +9,6 @@ from ollama_mcp_discord.core.config import ConfigurationError, config
 from ollama_mcp_discord.discord.bot import create_bot
 from ollama_mcp_discord.mcp.client import MCPClient
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -23,11 +22,13 @@ async def main():
     dotenv.load_dotenv()
 
     try:
-        # Create MCP client using configuration
+        logger.info("Creating MCP client")
         mcp_client = MCPClient(config_path=config.mcp_config_path)
+
+        logger.info("Starting MCP servers")
         await mcp_client.start_servers()
 
-        # Create and start the Discord bot
+        logger.info("Creating Discord bot")
         bot = create_bot(shared_mcp_client=mcp_client)
 
         logger.info("Starting Discord bot")
@@ -40,9 +41,10 @@ async def main():
     except Exception as e:
         logger.exception(f"Error running bot: {e}")
     finally:
-        # Ensure MCP servers are stopped and bot is closed
+        logger.info("Stopping MCP servers")
         if "mcp_client" in locals():
             await mcp_client.stop_servers()
+        logger.info("Closing Discord bot")
         if "bot" in locals():
             await bot.close()
 

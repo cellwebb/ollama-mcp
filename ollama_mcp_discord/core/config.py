@@ -24,7 +24,6 @@ class Configuration:
         Args:
             env_file: Optional path to .env file
         """
-        # Load environment variables from file if provided
         if env_file and os.path.exists(env_file):
             self._load_env_file(env_file)
 
