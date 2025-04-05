@@ -15,12 +15,19 @@ logger = logging.getLogger(__name__)
 class Session:
     """User session for managing conversations and MCP integrations."""
 
-    def __init__(self, user_id: int, model_name: str, mcp_client: Optional[MCPClient] = None):
+    def __init__(
+        self,
+        user_id: int,
+        model_name: str,
+        ollama_client: Optional[OllamaClient] = None,
+        mcp_client: Optional[MCPClient] = None,
+    ):
         """Initialize a new session for a user.
 
         Args:
             user_id: The Discord user ID
             model_name: The default Ollama model to use
+            ollama_client: An initialized Ollama client (optional)
             mcp_client: An initialized MCP client (optional)
         """
         self.user_id = user_id
@@ -28,7 +35,9 @@ class Session:
         self.conversation_id = str(uuid.uuid4())
 
         # Initialize clients
-        self.ollama_client = OllamaClient(host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name)
+        self.ollama_client = ollama_client or OllamaClient(
+            host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name
+        )
         # Use provided MCP client or create a new one
         self.mcp_client = mcp_client or MCPClient()
 
@@ -53,17 +62,32 @@ class Session:
         # Add AI response to history
         self.messages.append({"role": "assistant", "content": response})
 
+        # Trim message history to keep only the most recent messages (max 10)
+        max_capacity = 10
+        if len(self.messages) > max_capacity:
+            # Remove oldest messages to stay within capacity
+            self.messages = self.messages[-max_capacity:]
+
         return response
 
     async def set_model(self, model_name: str) -> None:
-        """Change the Ollama model being used.
+        """Set the Ollama model to use.
 
         Args:
             model_name: The name of the model to use
+
+        Raises:
+            ValueError: If the model doesn't exist
         """
         try:
-            # Simply set the model without validation
-            # This allows for users to specify models in different formats
+            # Validate that the model exists
+            models = await self.ollama_client.list_models()
+            valid_models = [model["name"] for model in models]
+
+            if model_name not in valid_models:
+                raise ValueError(f"Model '{model_name}' not found")
+
+            # Set the model
             self.model_name = model_name
             self.ollama_client.model = model_name
             logger.info(f"Changed model to {model_name} for user {self.user_id}")
@@ -151,19 +175,24 @@ class Session:
             raise ValueError("Initial thought cannot be empty")
 
         # Use the MCP client to perform sequential thinking
-        current_thought = initial_thought
+        current_thought_dict = {
+            "thought": initial_thought,
+            "thoughtNumber": 1,
+            "totalThoughts": 3,
+            "nextThoughtNeeded": True,
+        }
         current_result = None
 
         # Continue thinking until no more thoughts are needed
         while True:
             # Process the current thought
-            current_result = await self.mcp_client.sequential_thinking(current_thought)
+            current_result = await self.mcp_client.sequential_thinking(current_thought_dict)
 
             # Check if thinking is complete
             if not current_result.get("nextThoughtNeeded", False):
                 break
 
             # Update the current thought for the next iteration
-            current_thought = current_result.get("thought", "")
+            current_thought_dict = current_result
 
         return current_result

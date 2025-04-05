@@ -147,9 +147,15 @@ class TestMCPClient:
         # Given
         mocker.patch.object(client, "sequential_thinking_server", mock_thinking_client)
         thought = "Initial thought"
+        thought_params = {
+            "thought": thought,
+            "thoughtNumber": 1,
+            "totalThoughts": 3,
+            "nextThoughtNeeded": True,
+        }
 
         # When
-        result = await client.sequential_thinking(thought)
+        result = await client.sequential_thinking(thought_params)
 
         # Then
         mock_thinking_client.sequentialthinking.assert_called_once()

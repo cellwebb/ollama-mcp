@@ -145,25 +145,18 @@ class MCPClient:
         """Conclude a sequential thinking process."""
         return await self.sequential_thinking_server.conclude_thinking(final_thought, thought_number, total_thoughts)
 
-    async def sequential_thinking(self, thought: str) -> Dict[str, Any]:
-        """Process a sequential thinking step through the MCP server.
+    async def sequential_thinking(self, thought_params: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform sequential thinking using the sequential thinking server.
 
         Args:
-            thought: The current thought to process
+            thought_params: Dictionary containing the thought and related parameters
 
         Returns:
             A dictionary containing the processed thought and related metadata
         """
         try:
-            # Pass the thought to the sequential thinking server
-            result = await self.sequential_thinking_server.sequentialthinking(
-                {
-                    "thought": thought,
-                    "nextThoughtNeeded": True,
-                    "thoughtNumber": 1,
-                    "totalThoughts": 3,
-                }
-            )
+            # Pass the thought parameters to the sequential thinking server
+            result = await self.sequential_thinking_server.sequentialthinking(thought_params)
             return result
         except Exception as e:
             logger.error(f"Error in sequential thinking: {e}")

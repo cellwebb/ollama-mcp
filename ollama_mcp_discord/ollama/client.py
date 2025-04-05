@@ -65,6 +65,10 @@ class OllamaClient:
         if system:
             payload["system"] = system
 
+        # Only add context if it's provided
+        if context:
+            payload["context"] = context
+
         try:
             url = f"{self.host}/api/generate"
             logger.debug(f"Sending request to {url} with model {self.model}")

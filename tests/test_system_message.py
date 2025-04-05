@@ -1,6 +1,13 @@
-import os
+"""Tests for the system message module."""
 
-from system_message import (
+import json
+import os
+import tempfile
+from unittest.mock import patch
+
+import pytest
+
+from ollama_mcp_discord.system_message import (
     SYSTEM_MESSAGE_FILE,
     clear_system_message,
     get_system_message,

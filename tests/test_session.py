@@ -49,7 +49,12 @@ class TestSession:
     def session(self, mock_ollama_client, mock_mcp_client):
         """Create a test Session instance with mocked clients."""
         with mock.patch("uuid.uuid4", return_value="test-uuid"):
-            return Session(user_id=123, model_name="llama3")
+            return Session(
+                user_id=123,
+                model_name="llama3",
+                ollama_client=mock_ollama_client,
+                mcp_client=mock_mcp_client,
+            )
 
     @pytest.mark.asyncio
     async def test_process_message_returns_ai_response(self, session, mock_ollama_client):
