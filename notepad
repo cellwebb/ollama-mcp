@@ -1,0 +1,65 @@
+# Ollama-MCP Discord Bot Refactoring Instructions
+
+## Project Context
+The Ollama-MCP Discord Bot integrates Discord with Ollama (local LLM) and MCP services. The codebase is well-structured but contains custom implementations that could be replaced with established libraries.
+
+## Refactoring Goals
+1. Replace homespun code with established libraries
+2. Reduce maintenance burden
+3. Improve reliability and testability
+4. Maintain or enhance functionality
+
+## Priority Order for Implementation
+1. Configuration with Pydantic
+2. HTTP Client with HTTPX
+3. Session Management with LangChain
+4. Process Management with Python Daemon
+5. API Error Handling pattern
+6. Command Registration improvements
+7. Structured Logging
+
+## Important Notes
+- When refactoring, maintain the existing interfaces where possible to minimize disruption
+- Remove tests for code that's being replaced by libraries
+- Documentation should be updated to reflect new architecture
+- Code should be self-documenting - avoid comments except for docstrings
+- Follow PEP 8 with 120 character line length
+- Use Google-style docstrings with type annotations
+
+## Specific Implementation Guidelines
+
+### For Pydantic Configuration
+- Create settings.py module with BaseSettings
+- Use Field() for validation and documentation
+- Include nested models for MCP server config
+- Keep environment variable names consistent
+
+### For HTTP Client
+- Create http.py module with HTTPX client
+- Implement connection pooling
+- Add error middleware and logging
+- Make API clients thin wrappers around the shared client
+
+### For LangChain Integration
+- Replace conversation history with LangChain Memory
+- Use PromptTemplates for system messages
+- Integrate LangChain tools with MCP services
+- Keep the Session interface similar but delegate to LangChain
+
+### For Process Management
+- Use python-daemon for MCP server management
+- Implement proper signal handling
+- Add structured logging for process events
+- Create a clean shutdown mechanism
+
+## Testing Guidelines
+- Update tests when refactoring a component
+- Keep test structure and naming consistent
+- Add tests for new functionality
+- Maintain or improve test coverage
+
+## Documentation Requirements
+- Update README.md with new dependencies
+- Add architecture.md explaining the new design
+- Keep code documentation in docstrings, not inline comments
+- Document extension points for future development 

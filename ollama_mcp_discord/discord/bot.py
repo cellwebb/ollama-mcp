@@ -1,7 +1,6 @@
 """Discord bot implementation using nextcord."""
 
 import logging
-import os
 from typing import Dict, Optional
 
 import aiohttp
@@ -10,6 +9,7 @@ from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
 
 from ollama_mcp_discord.core.session import Session
+from ollama_mcp_discord.core.settings import settings
 from ollama_mcp_discord.mcp.client import MCPClient
 from ollama_mcp_discord.system_message import set_system_message
 
@@ -35,7 +35,7 @@ def create_bot(shared_mcp_client: Optional[MCPClient] = None) -> commands.Bot:
     intents.message_content = True
 
     # Create bot with command prefix
-    bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+    bot = commands.Bot(command_prefix=settings.command_prefix, intents=intents, help_command=None)
 
     @bot.event
     async def on_ready():
@@ -252,24 +252,19 @@ def register_commands(bot: commands.Bot):
 
 
 def get_user_session(user_id: int) -> Session:
-    """Get or create user session.
+    """Get or create a session for a user.
 
     Args:
-        user_id: Discord user ID
+        user_id: The Discord user ID
 
     Returns:
-        A session for the user
+        The user's session
     """
-    # Check if we already have a session for this user
-    if user_id in user_sessions:
-        return user_sessions[user_id]
-
-    # Default model - could be configured differently
-    default_model = os.getenv("DEFAULT_MODEL", "llama3")
-
-    # Create new session with shared MCP client if available
-    session = Session(user_id, default_model, mcp_client=mcp_client)
-    user_sessions[user_id] = session
-
-    logger.info(f"Created new session for user {user_id} with model {default_model}")
-    return session
+    if user_id not in user_sessions:
+        # Create a new session for this user
+        user_sessions[user_id] = Session(
+            user_id=user_id,
+            model_name=settings.ollama_model,
+            mcp_client=mcp_client,
+        )
+    return user_sessions[user_id]

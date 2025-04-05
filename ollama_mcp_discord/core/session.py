@@ -1,10 +1,10 @@
 """Session management for user conversations."""
 
 import logging
-import os
 import uuid
 from typing import Any, Dict, List, Optional
 
+from ollama_mcp_discord.core.settings import settings
 from ollama_mcp_discord.mcp.client import MCPClient
 from ollama_mcp_discord.ollama.client import OllamaClient
 from ollama_mcp_discord.system_message import get_system_message
@@ -18,7 +18,7 @@ class Session:
     def __init__(
         self,
         user_id: int,
-        model_name: str,
+        model_name: Optional[str] = None,
         ollama_client: Optional[OllamaClient] = None,
         mcp_client: Optional[MCPClient] = None,
     ):
@@ -26,18 +26,16 @@ class Session:
 
         Args:
             user_id: The Discord user ID
-            model_name: The default Ollama model to use
+            model_name: The default Ollama model to use (defaults to settings.ollama_model)
             ollama_client: An initialized Ollama client (optional)
             mcp_client: An initialized MCP client (optional)
         """
         self.user_id = user_id
-        self.model_name = model_name
+        self.model_name = model_name or settings.ollama_model
         self.conversation_id = str(uuid.uuid4())
 
         # Initialize clients
-        self.ollama_client = ollama_client or OllamaClient(
-            host=os.getenv("OLLAMA_HOST", "http://localhost:11434"), model=model_name
-        )
+        self.ollama_client = ollama_client or OllamaClient(model=self.model_name)
         # Use provided MCP client or create a new one
         self.mcp_client = mcp_client or MCPClient()
 

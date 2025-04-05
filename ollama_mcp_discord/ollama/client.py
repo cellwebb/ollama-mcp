@@ -3,7 +3,8 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-import aiohttp
+from ollama_mcp_discord.core.settings import settings
+from ollama_mcp_discord.utils.http import create_client
 
 logger = logging.getLogger(__name__)
 
@@ -11,21 +12,16 @@ logger = logging.getLogger(__name__)
 class OllamaClient:
     """Client for interacting with Ollama API."""
 
-    def __init__(self, host: str, model: str):
+    def __init__(self, host: Optional[str] = None, model: Optional[str] = None):
         """Initialize the Ollama client.
 
         Args:
-            host: Base URL for the Ollama server
-            model: Name of the model to use
+            host: Base URL for the Ollama server (defaults to settings.ollama_host)
+            model: Name of the model to use (defaults to settings.ollama_model)
         """
-        self.host = host.rstrip("/")
-        self.model = model
-        self.session: Optional[aiohttp.ClientSession] = None
-
-    async def _ensure_session(self):
-        """Ensure a client session is created."""
-        if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
+        self.host = host or str(settings.ollama_host)
+        self.model = model or settings.ollama_model
+        self.http_client = create_client(base_url=self.host, timeout=120.0)
 
     async def generate(
         self,
@@ -49,11 +45,6 @@ class OllamaClient:
         if not prompt or prompt.strip() == "":
             raise ValueError("Prompt cannot be empty")
 
-        await self._ensure_session()
-
-        # Ensure session is not None (mypy can't infer this from _ensure_session)
-        assert self.session is not None, "Client session must be initialized"
-
         # Super simplified payload - only the essentials
         payload = {
             "model": self.model,
@@ -70,14 +61,10 @@ class OllamaClient:
             payload["context"] = context
 
         try:
-            url = f"{self.host}/api/generate"
-            logger.debug(f"Sending request to {url} with model {self.model}")
-            async with self.session.post(url, json=payload) as response:
-                response.raise_for_status()
-                result = await response.json()
-                logger.debug(f"Response status: {response.status}")
-                return result.get("response", "")
-        except aiohttp.ClientError as e:
+            logger.debug(f"Sending request to Ollama with model {self.model}")
+            result = await self.http_client.post("/api/generate", json=payload)
+            return result.get("response", "")
+        except Exception as e:
             logger.error(f"Error generating response: {e}")
             raise
 
@@ -87,20 +74,24 @@ class OllamaClient:
         Returns:
             List of available models
         """
-        await self._ensure_session()
-
-        # Ensure session is not None (mypy can't infer this from _ensure_session)
-        assert self.session is not None, "Client session must be initialized"
-
         try:
-            url = f"{self.host}/api/tags"
-            logger.debug(f"Requesting models from {url}")
-            async with self.session.get(url) as response:
-                response.raise_for_status()
-                result = await response.json()
-                models = result.get("models", [])
-                logger.debug(f"Retrieved {len(models)} models")
-                return models
-        except aiohttp.ClientError as e:
+            logger.debug("Requesting models from Ollama")
+            result = await self.http_client.get("/api/tags")
+            models = result.get("models", [])
+            logger.debug(f"Retrieved {len(models)} models")
+            return models
+        except Exception as e:
             logger.error(f"Error listing models: {e}")
             raise
+
+    async def close(self):
+        """Close the client session."""
+        await self.http_client.close()
+
+    async def __aenter__(self):
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit async context manager."""
+        await self.close()

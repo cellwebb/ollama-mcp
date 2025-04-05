@@ -364,3 +364,32 @@ clear_system_message()
 ```
 
 The system message is stored in `~/.mcp_system_message.json` and persists between sessions.
+
+## Requirements
+
+- Python 3.11 or newer
+- Ollama server running locally or remotely
+- Discord Bot Token
+- MCP servers (optional, for enhanced capabilities)
+
+### Dependencies
+
+- `nextcord`: Discord API wrapper
+- `pydantic`: Data validation and settings management
+- `httpx`: Modern async HTTP client
+- `ollama`: Python client for Ollama
+- `python-dotenv`: Environment variable management
+- `langchain`: (Optional) LLM conversation management
+- `python-daemon`: (Optional) Process management
+- `structlog`: (Optional) Structured logging
+
+## Architecture
+
+The bot's architecture consists of these key components:
+
+1. **Discord Bot**: Handles Discord events and commands
+2. **Ollama Client**: Communicates with the Ollama API
+3. **MCP Clients**: Interface with various MCP servers
+4. **Session Management**: Maintains conversation state
+5. **Configuration**: Pydantic-based settings management
+6. **HTTP Client**: Shared HTTPX-based client for API requests
