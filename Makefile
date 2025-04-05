@@ -20,16 +20,26 @@ setup:
 
 run:
 	@echo "Starting Ollama-MCP Discord bot..."
-	python -m ollama_mcp_discord
+	if [ ! -d ".venv" ]; then \
+		echo "Please run 'uv venv' to create a virtual environment."; \
+		exit 1; \
+	fi
+	uv run -- python -m ollama_mcp_discord
 
 test:
 	@echo "Running tests..."
-	uv pip install .[dev]
-	python -m pytest tests/
+	if [ ! -d ".venv" ]; then \
+		echo "Please run 'uv venv' to create a virtual environment."; \
+		exit 1; \
+	fi
+	uv run -- pytest tests/
 
 test-cov:
 	@echo "Running tests with coverage..."
-	uv pip install .[dev]
+	if [ ! -d ".venv" ]; then \
+		echo "Please run 'uv venv' to create a virtual environment."; \
+		exit 1; \
+	fi
 	uv run -- pytest --cov=ollama_mcp_discord tests/
 
 lint:
