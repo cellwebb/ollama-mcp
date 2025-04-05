@@ -65,7 +65,7 @@ MCP servers can be configured using:
 
 The following environment variables can be used to configure MCP server endpoints:
 
-```
+```bash
 MEMORY_SERVER_ENDPOINT=http://localhost:3100
 FETCH_SERVER_ENDPOINT=http://localhost:3101
 PUPPETEER_SERVER_ENDPOINT=http://localhost:3102
