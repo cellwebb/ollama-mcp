@@ -118,8 +118,21 @@ def register_commands(bot: commands.Bot):
                 # Process the message
                 response = await session.process_message(message)
 
-                # Send the response
-                await ctx.reply(response)
+                # Handle Discord's 2000 character limit
+                if len(response) <= 2000:
+                    # Send the response as is if it's within the limit
+                    await ctx.reply(response)
+                else:
+                    # Split the response into chunks of 2000 characters or less
+                    chunks = [response[i : i + 1900] for i in range(0, len(response), 1900)]
+                    # Send the first chunk as a reply to maintain thread
+                    await ctx.reply(f"{chunks[0]}... (continued)")
+                    # Send remaining chunks as follow-up messages
+                    for i, chunk in enumerate(chunks[1:], 1):
+                        if i == len(chunks) - 1:  # Last chunk
+                            await ctx.send(chunk)
+                        else:
+                            await ctx.send(f"{chunk}... (continued)")
             except aiohttp.ClientResponseError as e:
                 error_msg = f"API Error: {e.status} {e.message}"
                 if e.status == 400:
