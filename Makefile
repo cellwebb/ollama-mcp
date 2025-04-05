@@ -18,6 +18,11 @@ setup:
 	uv venv
 	uv pip install .
 
+setup-dev:
+	@echo "Setting up virtual environment and installing dependencies for development..."
+	uv venv
+	uv pip install -e.[dev]
+
 run:
 	@echo "Starting Ollama-MCP Discord bot..."
 	if [ ! -d ".venv" ]; then \
